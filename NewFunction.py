@@ -1,2 +1,0 @@
-def NewFunction():
-    print('HelloWorld')
