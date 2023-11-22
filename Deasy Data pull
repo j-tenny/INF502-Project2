@@ -1,0 +1,120 @@
+import requests
+
+# Placeholder definition for the GitHubLicense class
+class GitHubLicense:
+    def __init__(self, name, spdx_id):
+        self.name = name
+        self.spdx_id = spdx_id
+
+    def __str__(self):
+        return f"{self.name} ({self.spdx_id})"
+
+# Define a class to represent a GitHub User
+class GitHubUser:
+    def __init__(self, login):
+        self.login = login
+
+    def __str__(self):
+        return f"{self.login}"
+
+# Define a class to represent pull request details
+class GitHubPullRequestDetails:
+    def __init__(self, number, title, body, state, created_at, closed_at, user, commits, additions, deletions, changed_files):
+        self.number = number
+        self.title = title
+        self.body = body
+        self.state = state
+        self.created_at = created_at
+        self.closed_at = closed_at
+        self.user = user  # User is an instance of GitHubUser
+        self.commits = commits
+        self.additions = additions
+        self.deletions = deletions
+        self.changed_files = changed_files
+
+    def __str__(self):
+        return f"#{self.number}: {self.title} ({self.state})"
+
+# Define a class to represent a GitHub Repository
+class GitHubRepository:
+    def __init__(self, name, owner, description, homepage, license, forks, watchers, date_of_collection):
+        self.name = name
+        self.owner = owner
+        self.description = description
+        self.homepage = homepage
+        self.license = license  # License is an instance of GitHubLicense
+        self.forks = forks
+        self.watchers = watchers
+        self.date_of_collection = date_of_collection
+        self.pull_requests = []  # List to store pull requests
+
+    def __str__(self):
+        return f"{self.owner}/{self.name}: {self.description} ({self.watchers})"
+
+    def add_pull_request(self, pull_request):
+        self.pull_requests.append(pull_request)
+
+# Function to fetch pull requests for a repository
+def fetch_pull_requests(repository_owner, repository_name):
+    url = f"https://api.github.com/search/issues?q=is:pr+repo:{repository_owner}/{repository_name}"
+    response = requests.get(url)
+    pull_requests_data = response.json().get('items', [])
+
+    pull_requests = []
+    for pr_data in pull_requests_data:
+        user_data = pr_data['user']
+        user = GitHubUser(login=user_data['login'])
+
+        # Check if 'commits' key is present in the response
+        commits = pr_data.get('commits', 0)
+
+        pull_request_details = GitHubPullRequestDetails(
+            number=pr_data['number'],
+            title=pr_data['title'],
+            body=pr_data['body'],
+            state=pr_data['state'],
+            created_at=pr_data['created_at'],
+            closed_at=pr_data.get('closed_at'),
+            user=user,
+            commits=commits,
+            additions=pr_data.get('additions', 0),
+            deletions=pr_data.get('deletions', 0),
+            changed_files=pr_data.get('changed_files', 0)
+        )
+        pull_requests.append(pull_request_details)
+
+    return pull_requests
+# Sample data for repository and license
+license_data = {
+    "name": "MIT License",
+    "spdx_id": "MIT"
+}
+
+repo_data = {
+    "name": "jabref",
+    "owner": "JabRef",
+    "description": "Reference manager",
+    "homepage": "https://github.com/JabRef/jabref",
+    "license": GitHubLicense(**license_data),
+    "forks": 123,
+    "watchers": 456,
+    "date_of_collection": "2023-11-06"
+}
+
+# Create instances of GitHubLicense and GitHubRepository
+my_license = GitHubLicense(**license_data)
+my_repo = GitHubRepository(**repo_data)
+
+# Fetch and add pull requests to the repository
+pull_requests = fetch_pull_requests(repository_owner=my_repo.owner, repository_name=my_repo.name)
+for pr in pull_requests:
+    my_repo.add_pull_request(pr)
+
+# Access attributes of the repository, license, and pull requests
+print(my_repo.forks)  # Output: 123
+print(my_repo.license)  # Output: MIT License (MIT)
+
+# Print the repository object and its pull requests
+print(my_repo)
+for pr in my_repo.pull_requests:
+    print(pr)
