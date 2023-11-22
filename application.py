@@ -120,11 +120,13 @@ class GetRepoMenu:
         # Use these inputs to download data for a repo
         # TODO: check to see if repo exists in current repos list before downloading/adding it again
         # TODO: Improve error handling when trying to download repo data
-        try:
-            repo_data = gitdata.Repository(owner_name,repo_name)
-        except:
+        #try:
+        repo_data = gitdata.Repository(owner_name,repo_name)
+        #except KeyError as e:
             # If an exception occurs, start over
-            self.display()
+        #    print(str(e))
+        #    print('Data for an essential field was not found, try another repository.')
+        #    self.display()
 
         # Append this repo data to the app's stored repo data
         self.app.repos.append(repo_data)

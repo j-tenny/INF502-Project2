@@ -100,11 +100,12 @@ class PullRequest:
     self.state = json['state']
     self.created_at = json['created_at']
     self.closed_at = json['closed_at']
-    self.user = json['user']  # User is an instance of GitHubUser
-    self.commits = json['commits']
-    self.additions = json['additions']
-    self.deletions = json['deletions']
-    self.changed_files = json['changed_files']
+    self.user = json['user']['login']  # User is an instance of GitHubUser
+    self.commits_url = json['commits_url']
+    self.diff_url = json['diff_url']
+
+    self.get_num_commits()
+    self.get_diff_metrics()
 
   def to_dict(self):
     return {'title':self.title,
@@ -114,11 +115,20 @@ class PullRequest:
             'created_at':self.created_at,
             'closed_at':self.closed_at,
             'user':self.user,
-            'commits':self.commits,
-            'additions':self.additions,
-            'deletions':self.deletions,
-            'changed_files':self.changed_files,
+            'num_commits':self.num_commits,
+            'num_additions':self.num_additions,
+            'num_deletions':self.num_deletions,
+            'num_changed_files':self.num_changed_files,
             }
+
+  def get_num_commits(self):
+    # TODO get number of commits from commits_url
+    self.num_commits = int()
+  def get_diff_metrics(self):
+    # TODO get number of additions, deletions, changed files from diff_url
+    self.num_additions = int()
+    self.num_deletions = int()
+    self.num_changed_files = int()
 
   def __str__(self):
     return f'Pull Request #{self.number}: {self.title}'
