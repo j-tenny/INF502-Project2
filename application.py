@@ -124,7 +124,6 @@ class GetRepoMenu:
         print('Downloading and analyzing Github data. Please wait...')
 
         # Use these inputs to download data for a repo
-
         try:
             repo_data = gitdata.Repository(owner_name,repo_name,token=self.app._token)
         except KeyError as e:

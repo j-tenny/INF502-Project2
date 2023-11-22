@@ -1,3 +1,20 @@
+# Placeholder definition for the GitHubLicense class
+class GitHubLicense:
+    def __init__(self, name, spdx_id):
+        self.name = name
+        self.spdx_id = spdx_id
+
+    def __str__(self):
+        return f"{self.name} ({self.spdx_id})"
+
+# Define a class to represent a GitHub User
+class GitHubUser:
+    def __init__(self, login):
+        self.login = login
+
+    def __str__(self):
+        return f"{self.login}"
+
 class Repository:
     # TODO: create data structures for github users and add functionality to summarize users who contributed to this repo
     def __init__(self, owner_name, repo_name, token=None):
@@ -52,6 +69,7 @@ class Repository:
         return f'Repository(owner_name: {self.owner_name}, repo_name: {self.repo_name}, n_pull_requests: {len(self.pull_requests)})'
 class PullRequest:
   def __init__(self,title:str = None, number:int = None, body:str = None, state:str = None, created_at:str = None, closed_at:str = None, user:str=None,  commits:str=None, additions:str=None, deletions:str=None, changed_files:str=None,token=None):
+
     self.title = title
     self.number = number
     self.body = body
@@ -65,6 +83,7 @@ class PullRequest:
     self.num_changed_files = changed_files
 
     self.__token = token #Store token for making API requests. DO NOT INCLUDE IN OUTPUTS.
+
 
 
   def fill_from_json(self,json):
@@ -87,7 +106,12 @@ class PullRequest:
             'body':self.body,
             'state':self.state,
             'created_at':self.created_at,
-            'closed_at':self.closed_at
+            'closed_at':self.closed_at,
+            'user':self.user,
+            'num_commits':self.num_commits,
+            'num_additions':self.num_additions,
+            'num_deletions':self.num_deletions,
+            'num_changed_files':self.num_changed_files,
             }
 
   def get_num_commits(self):
@@ -123,6 +147,7 @@ class PullRequest:
     self.num_additions = additions
     self.num_deletions = deletions
     self.num_changed_files = changed_files
+
 
   def __str__(self):
     return f'Pull Request #{self.number}: {self.title}'
