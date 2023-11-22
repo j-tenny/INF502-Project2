@@ -1,8 +1,11 @@
 import gitdata
 class Application:
-    def __init__(self,menu_width):
+    def __init__(self,menu_width,token=None):
         # Store specified menu width
         self.menu_width = menu_width
+
+        # Initialize token
+        self._token = token
 
         # Initialize an empty list to store repo data
         self.repos = list()
@@ -19,13 +22,18 @@ class Application:
         self.repo_analysis_menu = RepoAnalysisMenu(parent_app=self)
 
 
+
+
     # Define application functions
     def run(self):
         self.change_menu(self.welcome_menu)
     def refresh(self):
+        clear_screen()
         self.current_menu.display()
     def change_menu(self,new_menu):
+        clear_screen()
         self.current_menu = new_menu
+        self.print_current_menu_name()
         self.current_menu.display()
     def print_current_menu_name(self):
         if self.current_menu.name.upper() != 'WELCOME MENU':
@@ -58,22 +66,20 @@ class MainMenu:
         self.name = 'Main Menu'
         self.app = parent_app
     def display(self):
-        clear_screen()
-        self.app.print_current_menu_name()
-        print('[1] Summarize all repositories on Github')
-        print('[2] Download data about a specific repository')
-        print('[3] Summarize a repository which has already been downloaded')
+        print('[1] Download data for a repository')
+        print('[2] Summarize a repository which has already been downloaded')
+        print('[3] Summarize all repositories that have been downloaded in this session')
         print('[4] Exit the program')
         user_input = validate_menu_input(num_options=4)
         self.process_user_input(user_input)
 
     def process_user_input(self,user_input):
         if user_input==1:
-            self.app.change_menu(self.app.all_repos_menu)
-        elif user_input == 2:
             self.app.change_menu(self.app.get_repo_menu)
-        elif user_input==3:
+        elif user_input == 2:
             self.app.change_menu(self.app.select_repo_menu)
+        elif user_input==3:
+            self.app.change_menu(self.app.all_repos_menu)
         else:
             import sys
             sys.exit()
@@ -88,8 +94,6 @@ class AllReposMenu:
         # TODO: Create and hook up functionality for all repos analysis
 
         # Display title and menu options
-        clear_screen()
-        self.app.print_current_menu_name()
         print('This menu will allow users to summarize data about all repos on github')
         print('[1] Return to main menu')
 
@@ -108,8 +112,6 @@ class GetRepoMenu:
 
     def display(self):
         # Display menu name and options
-        clear_screen()
-        self.app.print_current_menu_name()
         print('Type in Github owner name and repository name below')
         print('   *Or return to main menu by typing EXIT')
 
@@ -117,13 +119,40 @@ class GetRepoMenu:
         owner_name = self.validate_owner_input()
         repo_name = self.validate_repo_input()
 
+        print('Downloading and analyzing Github data. Please wait...')
+
         # Use these inputs to download data for a repo
+<<<<<<< Updated upstream
         # TODO: check to see if repo exists in current repos list before downloading/adding it again
         # TODO: Improve error handling when trying to download repo data
         try:
             repo_data = gitdata.Repository(owner_name,repo_name)
         except:
             # If an exception occurs, start over
+=======
+        try:
+            repo_data = gitdata.Repository(owner_name,repo_name,token=self.app._token)
+        except KeyError as e:
+            # If an exception occurs, start over
+            print(str(e))
+            print('Data for an essential field was not found, try another repository.')
+            print()
+            self.display()
+
+        except PermissionError as e:
+            print(str(e))
+            print()
+            self.display()
+
+        except ConnectionError as e:
+            print(str(e))
+            print()
+            self.display()
+
+        except Exception as e:
+            print(str(e))
+            print()
+>>>>>>> Stashed changes
             self.display()
 
         # Append this repo data to the app's stored repo data
@@ -136,17 +165,72 @@ class GetRepoMenu:
         self.app.change_menu(self.app.repo_analysis_menu)
 
     def validate_owner_input(self):
-        # TODO: use while loop or try-except to make sure string is valid and owner exists
-        owner = input('Input the name of a Github repo owner >> ').strip()
-        if owner.upper() == 'EXIT':
-            self.app.change_menu(self.app.main_menu)
+        valid = False
+        while not valid:
+            print()
+            owner = input('Input the name of a Github repo owner (or type EXIT) >> ').strip()
+            if owner == 'EXIT':
+                valid = True
+                self.app.change_menu(self.app.main_menu)
+            else:
+                if ('/' in owner) or ('.' in owner):
+                    print('Input owner name only, do not include / . or other invalid characters')
+                else:
+                    try:
+                        owned_repos_list = list()
+                        url = f'https://api.github.com/users/{owner}'
+                        json = gitdata.get_github_api_request(url=url,convert_json=True,token = self.app._token)
+                        owner = json['login']
+                        repos = gitdata.get_github_api_request(url=json["repos_url"],convert_json=True,token=self.app._token)
+                        for repo in repos:
+                            if repo['owner']['login'] == owner:
+                                owned_repos_list.append(repo['name'])
+                        if len(owned_repos_list) == 0:
+                            print('This user exists but does not own any public repos')
+                        else:
+                            valid = True
+                    except ValueError:
+                        print('Could not find this owner on Github. Check spelling, internet connection, or try again.')
+                    except Exception as e:
+                        print(str(e))
+
+        print(f'Found {len(owned_repos_list)} repositories owned by {owner}. Type LIST to display repo names.')
+        self._current_owned_repos_list = owned_repos_list
+        self._current_owner = owner
         return owner
 
     def validate_repo_input(self):
-        # TODO use while loop or try-except to make sure string is valid and owner exists
-        repo = input('Input the name of a Github repo >> ').strip()
-        if repo.upper() == 'EXIT':
-            self.app.change_menu(self.app.main_menu)
+        valid = False
+        while not valid:
+            print()
+            repo = input('Input the name of a Github repository (or type EXIT) >> ').strip()
+            if repo == 'EXIT':
+                valid = True
+                self.app.change_menu(self.app.main_menu)
+            elif repo == 'LIST':
+                print('\n'.join(self._current_owned_repos_list))
+            else:
+                if ('/' in repo) or ('.' in repo):
+                    print('Input repo name only, do not include / . or other invalid characters')
+                else:
+                    try:
+                        already_downloaded = False
+                        for existing_repo in self.app.repos:
+                            if (self._current_owner == existing_repo.owner_name) & (repo == existing_repo.repo_name):
+                                already_downloaded = True
+                        if not already_downloaded:
+                            url = f'https://api.github.com/repos/{self._current_owner}/{repo}'
+                            gitdata.get_github_api_request(url=url, convert_json=True, token=self.app._token)
+                            valid = True
+                        else:
+                            print('Data for this repository has already been downloaded. Type EXIT to return to main menu.')
+
+                    except ValueError:
+                        print(f'Could not find {repo} owned by {self._current_owner}. Type LIST to display valid repo names.')
+
+                    except Exception as e:
+                        print(str(e))
+
         return repo
 
 class RepoAnalysisMenu:
@@ -158,10 +242,7 @@ class RepoAnalysisMenu:
         # Get the Repository object for the selected repo index
         selected_repo = self.app.repos[self.app.selected_repo_index]
 
-        # Display menu title and options
-        clear_screen()
-        self.app.print_current_menu_name()
-
+        # Display options
         print(f'Selected repo: {selected_repo.owner_name}/{selected_repo.repo_name}')
         print('[1] Show all pull requests')
         print('[2] Show summary for this repository')
@@ -174,22 +255,20 @@ class RepoAnalysisMenu:
 
     def process_user_input(self,user_input):
         if user_input==1:
-            # TODO: Hook up function to display pull requests
-            print('Function not implemented yet')
-            user_input = validate_menu_input(num_options=4)
-            self.process_user_input(user_input)
+            pulls = self.app.repos[self.app.selected_repo_index].pull_requests
+            for pull in pulls:
+                print(str(pull))
+            self.display()
 
         elif user_input==2:
             # TODO: Hook up function to display repository summary
             print('Function not implemented yet')
-            user_input = validate_menu_input(num_options=4)
-            self.process_user_input(user_input)
+            self.display()
 
         elif user_input==3:
             # TODO: Hook up function to display user correlation data
             print('Function not implemented yet')
-            user_input = validate_menu_input(num_options=4)
-            self.process_user_input(user_input)
+            self.display()
 
         else:
             self.app.change_menu(self.app.main_menu)
@@ -201,9 +280,6 @@ class SelectRepoMenu:
         self.app = parent_app
 
     def display(self):
-        clear_screen()
-        self.app.print_current_menu_name()
-
         # Display menu option for each stored repo
         menu_option_number = 1
         if len(self.app.repos) >= 1:
