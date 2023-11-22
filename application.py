@@ -42,7 +42,6 @@ class Application:
             print('*'*self.menu_width)
             print(formatted_name)
             print('*'*self.menu_width)
-            print()
 
 
 class WelcomeMenu:
@@ -53,7 +52,7 @@ class WelcomeMenu:
         clear_screen()
         print('********************************************')
         print('*********** GITHUB DATA BUDDY **************')
-        print('************* Version 0.1.1 ****************')
+        print('************* Version 0.2.1 ****************')
         print()
         print('Updated November 11, 2023')
         print('Developed by...[names]')
@@ -66,6 +65,7 @@ class MainMenu:
         self.name = 'Main Menu'
         self.app = parent_app
     def display(self):
+        print()
         print('[1] Download data for a repository')
         print('[2] Summarize a repository which has already been downloaded')
         print('[3] Summarize all repositories that have been downloaded in this session')
@@ -94,6 +94,7 @@ class AllReposMenu:
         # TODO: Create and hook up functionality for all repos analysis
 
         # Display title and menu options
+        print()
         print('This menu will allow users to summarize data about all repos on github')
         print('[1] Return to main menu')
 
@@ -112,6 +113,7 @@ class GetRepoMenu:
 
     def display(self):
         # Display menu name and options
+        print()
         print('Type in Github owner name and repository name below')
         print('   *Or return to main menu by typing EXIT')
 
@@ -122,14 +124,7 @@ class GetRepoMenu:
         print('Downloading and analyzing Github data. Please wait...')
 
         # Use these inputs to download data for a repo
-<<<<<<< Updated upstream
-        # TODO: check to see if repo exists in current repos list before downloading/adding it again
-        # TODO: Improve error handling when trying to download repo data
-        try:
-            repo_data = gitdata.Repository(owner_name,repo_name)
-        except:
-            # If an exception occurs, start over
-=======
+
         try:
             repo_data = gitdata.Repository(owner_name,repo_name,token=self.app._token)
         except KeyError as e:
@@ -152,7 +147,6 @@ class GetRepoMenu:
         except Exception as e:
             print(str(e))
             print()
->>>>>>> Stashed changes
             self.display()
 
         # Append this repo data to the app's stored repo data
@@ -243,6 +237,7 @@ class RepoAnalysisMenu:
         selected_repo = self.app.repos[self.app.selected_repo_index]
 
         # Display options
+        print()
         print(f'Selected repo: {selected_repo.owner_name}/{selected_repo.repo_name}')
         print('[1] Show all pull requests')
         print('[2] Show summary for this repository')
@@ -280,6 +275,7 @@ class SelectRepoMenu:
         self.app = parent_app
 
     def display(self):
+        print()
         # Display menu option for each stored repo
         menu_option_number = 1
         if len(self.app.repos) >= 1:

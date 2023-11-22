@@ -51,20 +51,13 @@ class Repository:
     def __repr__(self):
         return f'Repository(owner_name: {self.owner_name}, repo_name: {self.repo_name}, n_pull_requests: {len(self.pull_requests)})'
 class PullRequest:
-<<<<<<< Updated upstream
-  def __init__(self,title:str = None, number:int = None, body:str = None, state:str = None, created_at:str = None, closed_at:str = None):
-=======
   def __init__(self,title:str = None, number:int = None, body:str = None, state:str = None, created_at:str = None, closed_at:str = None, user:str=None,  commits:str=None, additions:str=None, deletions:str=None, changed_files:str=None,token=None):
->>>>>>> Stashed changes
     self.title = title
     self.number = number
     self.body = body
     self.state = state
     self.created_at = created_at
-<<<<<<< Updated upstream
     self.closed_at = closed_at
-=======
-    self.closed_at = closed_at        
     self.user = user
     self.num_commits = commits
     self.num_additions = additions
@@ -73,7 +66,6 @@ class PullRequest:
 
     self.__token = token #Store token for making API requests. DO NOT INCLUDE IN OUTPUTS.
 
->>>>>>> Stashed changes
 
   def fill_from_json(self,json):
     self.title = json['title']
@@ -82,16 +74,12 @@ class PullRequest:
     self.state = json['state']
     self.created_at = json['created_at']
     self.closed_at = json['closed_at']
-<<<<<<< Updated upstream
-=======
     self.user = json['user']['login']
     self.commits_url = json['commits_url'] # Don't need to output
     self.diff_url = json['diff_url'] # Don't need to output
 
     self.get_num_commits()
     self.get_diff_metrics()
->>>>>>> Stashed changes
-
 
   def to_dict(self):
     return {'title':self.title,
@@ -102,8 +90,6 @@ class PullRequest:
             'closed_at':self.closed_at
             }
 
-<<<<<<< Updated upstream
-=======
   def get_num_commits(self):
     commits_json = get_github_api_request(url=self.commits_url,convert_json=True,token=self.__token)
 
@@ -138,15 +124,11 @@ class PullRequest:
     self.num_deletions = deletions
     self.num_changed_files = changed_files
 
->>>>>>> Stashed changes
   def __str__(self):
     return f'Pull Request #{self.number}: {self.title}'
 
   def __repr__(self):
     return f'PullRequest(number:{self.number}, title:{self.title})'
-
-<<<<<<< Updated upstream
-=======
 
 def get_github_api_request(url,convert_json=True, token=None):
     import requests
@@ -175,4 +157,4 @@ def get_github_api_request(url,convert_json=True, token=None):
         raise ValueError('Error 404: No data found at this URL')
     else:
         raise ConnectionError(f"Failed to access Github API. Status code: {response.status_code} \n\n"+response.text)
->>>>>>> Stashed changes
+
