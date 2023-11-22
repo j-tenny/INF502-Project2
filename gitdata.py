@@ -1,3 +1,20 @@
+# Placeholder definition for the GitHubLicense class
+class GitHubLicense:
+    def __init__(self, name, spdx_id):
+        self.name = name
+        self.spdx_id = spdx_id
+
+    def __str__(self):
+        return f"{self.name} ({self.spdx_id})"
+
+# Define a class to represent a GitHub User
+class GitHubUser:
+    def __init__(self, login):
+        self.login = login
+
+    def __str__(self):
+        return f"{self.login}"
+
 class Repository:
     # TODO: create data structures for github users and add functionality to summarize users who contributed to this repo
     def __init__(self, owner_name, repo_name):
@@ -62,13 +79,19 @@ class Repository:
     def __repr__(self):
         return f'Repository(owner_name: {self.owner_name}, repo_name: {self.repo_name}, n_pull_requests: {len(self.pull_requests)})'
 class PullRequest:
-  def __init__(self,title:str = None, number:int = None, body:str = None, state:str = None, created_at:str = None, closed_at:str = None):
+  def __init__(self,title:str = None, number:int = None, body:str = None, state:str = None, created_at:str = None, closed_at:str = None, user:str=None,  commits:str=None, additions:str=None, deletions:str=None, changed_files:str=None,):
     self.title = title
     self.number = number
     self.body = body
     self.state = state
     self.created_at = created_at
-    self.closed_at = closed_at
+    self.closed_at = closed_at        
+    self.user = user  # User is an instance of GitHubUser
+    self.commits = commits
+    self.additions = additions
+    self.deletions = deletions
+    self.changed_files = changed_files
+
 
   def fill_from_json(self,json):
     self.title = json['title']
@@ -77,6 +100,11 @@ class PullRequest:
     self.state = json['state']
     self.created_at = json['created_at']
     self.closed_at = json['closed_at']
+    self.user = json['user']  # User is an instance of GitHubUser
+    self.commits = json['commits']
+    self.additions = json['additions']
+    self.deletions = json['deletions']
+    self.changed_files = json['changed_files']
 
   def to_dict(self):
     return {'title':self.title,
@@ -84,7 +112,12 @@ class PullRequest:
             'body':self.body,
             'state':self.state,
             'created_at':self.created_at,
-            'closed_at':self.closed_at
+            'closed_at':self.closed_at,
+            'user':self.user,
+            'commits':self.commits,
+            'additions':self.additions,
+            'deletions':self.deletions,
+            'changed_files':self.changed_files,
             }
 
   def __str__(self):
@@ -92,4 +125,3 @@ class PullRequest:
 
   def __repr__(self):
     return f'PullRequest(number:{self.number}, title:{self.title})'
-
