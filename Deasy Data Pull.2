@@ -1,0 +1,46 @@
+import requests
+import pandas as pd
+
+class PullRequest:
+    def __init__(self, title=None, number=None, body=None, state=None, created_at=None, closed_at=None):
+        self.title = title
+        self.number = number
+        self.body = body
+        self.state = state
+        self.created_at = created_at
+        self.closed_at = closed_at
+
+    def from_json(self, json_data):
+        self.title = json_data['title']
+        self.number = json_data['number']
+        self.body = json_data['body']
+        self.state = json_data['state']
+        self.created_at = json_data['created_at']
+        self.closed_at = json_data.get('closed_at')
+
+    def to_dict(self):
+        return {
+            'title': self.title,
+            'number': self.number,
+            'body': self.body,
+            'state': self.state,
+            'created_at': self.created_at,
+            'closed_at': self.closed_at
+        }
+
+    def __str__(self):
+        return f'Pull Request #{self.number}: {self.title}'
+
+# Function to fetch pull requests for a repository
+def fetch_pull_requests(owner, repo):
+    url = f"https://api.github.com/repos/{owner}/{repo}/pulls"
+
+    try:
+        response = requests.get(url)
+        response.raise_for_status()  # Raise an HTTPError for bad responses (4xx or 5xx)
+
+        pull_requests_data = response.json()
+        return [PullRequest().from_json(data) for data in pull_requests_data]
+    except requests.exceptions.RequestException as e:
+        print(f"Error: {e}")
+        return []
