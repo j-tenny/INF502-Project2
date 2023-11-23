@@ -183,3 +183,23 @@ def get_github_api_request(url,convert_json=True, token=None):
     else:
         raise ConnectionError(f"Failed to access Github API. Status code: {response.status_code} \n\n"+response.text)
 
+def total_user(self):
+    total_user = 0
+    for sum in self.user:
+        total_user += sum
+    return total_sum
+
+def total_pulls_closed(self):
+    pull_closed_total = 0 
+    for sum in self.closed_at:
+        pull_closed_total += sum
+    return pull_closed_total
+
+def total_pulls_open(self):
+    pull_open_total = 0
+    for sum in self.created_at:
+        pull_open_total += sum
+    return pull_open_total
+
+def 
+
