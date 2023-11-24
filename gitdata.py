@@ -65,6 +65,31 @@ class Repository:
         import pandas as pd
         return pd.DataFrame(self.pull_requests_to_json())
 
+    def total_user(self):
+        total_user = 0
+        for sum in self.owner_name:
+            total_user += sum
+        return total_sum
+    
+    def total_pulls_closed(self):
+        pull_closed_total = 0
+        for sum in PullRequest.closed_at:
+            pull_closed_total += sum
+        return pull_closed_total
+    
+    def total_pulls_open(self):
+        pull_open_total = 0
+        for pull in self.pull_request:
+            if pull.status == 'open':
+                pull_open_total += 1
+        return pull_open_total
+    
+    def oldest(self):
+        dates = []
+        for pull in created_at:
+            dates.append(pull)
+            if 
+
     def __repr__(self):
         return f'Repository(owner_name: {self.owner_name}, repo_name: {self.repo_name}, n_pull_requests: {len(self.pull_requests)})'
 class PullRequest:
@@ -183,23 +208,4 @@ def get_github_api_request(url,convert_json=True, token=None):
     else:
         raise ConnectionError(f"Failed to access Github API. Status code: {response.status_code} \n\n"+response.text)
 
-def total_user(self):
-    total_user = 0
-    for sum in self.user:
-        total_user += sum
-    return total_sum
-
-def total_pulls_closed(self):
-    pull_closed_total = 0 
-    for sum in self.closed_at:
-        pull_closed_total += sum
-    return pull_closed_total
-
-def total_pulls_open(self):
-    pull_open_total = 0
-    for sum in self.created_at:
-        pull_open_total += sum
-    return pull_open_total
-
-def 
 
