@@ -88,7 +88,9 @@ class Repository:
         dates = []
         for pull in created_at:
             dates.append(pull)
-            if 
+            dates.sort()
+        oldest = dates[0]
+        return oldest
 
     def __repr__(self):
         return f'Repository(owner_name: {self.owner_name}, repo_name: {self.repo_name}, n_pull_requests: {len(self.pull_requests)})'
