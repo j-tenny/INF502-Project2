@@ -41,7 +41,7 @@ class Repository:
 
     def get_pulls_as_json(self):
         # GitHub API endpoint for pull requests
-        url = f"https://api.github.com/repos/{self.owner_name}/{self.repo_name}/pulls"
+        url = f"https://api.github.com/repos/{self.owner_name}/{self.repo_name}/pulls?state=all"
 
         pull_requests_json = get_github_api_request(url = url,convert_json=True,token=self.__token)
 
