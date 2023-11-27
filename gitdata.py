@@ -21,7 +21,7 @@ class AllRepositories:
         import pandas as pd
         dfs = list()
         for repo in self.repos:
-            temp_df = self.repos.pull_requests_to_pandas()
+            temp_df = repo.pull_requests_to_pandas()
             dfs.append(temp_df)
 
         df = pd.concat(dfs)
@@ -49,7 +49,7 @@ class AllRepositories:
         dfs = list()
         
         for repo in self.repos:
-            temp_df = self.repos.pull_requests_to_pandas()
+            temp_df = repo.pull_requests_to_pandas()
             dfs.append(temp_df)
 
         df = pd.concat(dfs)
@@ -75,10 +75,20 @@ class AllRepositories:
         return None
 
     def display_users_per_repository(self):
-        #import pandas as pd
-        #df = self.repos.users_to_pandas()
-        #df.plot.bar(x='users', y='repo', rot=0)
-        print("I Still need to work on this function")
+        import pandas as pd
+        #initialize list of dicts
+        repo_users = list()
+        #iterate across all repos
+        for repo in self.repos:
+            initialize dictionary
+            temp_dict = dict()
+            temp_dict['repo_name'] = repo.repo_name
+            temp_dict['users'] = len(repo.users)
+            repo_users.append(temp_dict)
+            
+        #create dataframe from list of dicts and display bar plot    
+        df = pd.DataFrame(repo_users)
+        df.plot.bar(x='users', y='repo_name', rot=0)
         return None
         
 =======
@@ -110,9 +120,11 @@ class Repository:
 
         # Initialize empty variables for pull request data and contributing user data
         self.pull_requests = tuple()
+        self.users = tuple()
 
-        # Automatically run function to get pull requests
+        # Automatically run function to get pull requests and users
         self.get_pulls()
+        self.get_users()
 
     def get_pulls_as_json(self):
         # GitHub API endpoint for pull requests
@@ -150,11 +162,60 @@ class Repository:
         import pandas as pd
         return pd.DataFrame(self.pull_requests_to_json())
 
+
+
+
+    def get_users_as_json(self, username):
+        # GitHub API endpoint for pull requests
+        url = f"https://api.github.com/users/{username}"
+
+        users = get_github_api_request(url = url,convert_json=True,token=self.__token)
+
+        return users_json
+
+    def get_users(self,token=None):
+        # Temporarily create an empty list
+        user_list = list()
+        
+        #iterate across pull requests
+        for pull in self.pull_requests:
+            #check if name in user list
+            check = [i for i,d in enumerate(user_list) if d['name'] == pull.user]
+            
+            if len(check) == 0:
+                # Get pull requests from github in json format
+                user_json = self.get_pulls_as_json( pull.user )
+
+                # Convert each user to a user object and add it
+                # to the list of users stored in this Repository object
+                user_instance = User(name = pull.user, token=self.__token)
+                user_instance.fill_from_json(user_json)
+                user_list.append(user_instance)
+
+            else:
+                #otherwise add another contribution tally to the user
+                user_list[check[0]].contributions += 1
+
+        # Convert list to tuple so it's safer from accidental changes
+        self.users = tuple(user_list)
+
+    def users_to_json(self):
+        output_list = list()
+        for user in self.users:
+            output_list.append(user.to_dict())
+
+        return output_list
+
+    def users_to_pandas(self):
+        import pandas as pd
+        return pd.DataFrame(self.users_to_json())
+
     def __repr__(self):
         return f'Repository(owner_name: {self.owner_name}, repo_name: {self.repo_name}, n_pull_requests: {len(self.pull_requests)})'
     
 class PullRequest:
-  def __init__(self,title:str = None, number:int = None, body:str = None, state:str = None, created_at:str = None, closed_at:str = None, user:str=None,  commits:str=None, additions:str=None, deletions:str=None, changed_files:str=None,token=None):
+  def __init__(self,title:str = None, number:int = None, body:str = None, state:str = None, created_at:str = None, closed_at:str = None,
+               user:str=None,  commits:str=None, additions:str=None, deletions:str=None, changed_files:str=None,token=None):
 
     self.title = title
     self.number = number
@@ -269,3 +330,31 @@ def get_github_api_request(url,convert_json=True, token=None):
     else:
         raise ConnectionError(f"Failed to access Github API. Status code: {response.status_code} \n\n"+response.text)
 
+
+
+class User:
+  def __init__(self, name, followers:str = None, following:int = None, repos:str = None, gists:str = None, token=None):
+      
+    self.name = name
+    self.followers = followers
+    self.following = following
+    self.public_repos = public_repos
+    self.public_gists = public_gists
+    self.contributions = 1
+
+    self.__token = token #Store token for making API requests. DO NOT INCLUDE IN OUTPUTS.
+
+  def fill_from_json(self,json):
+    self.followers = json['followers']
+    self.following = json['following']
+    self.public_repos = json['public_repos']
+    self.public_gists = json['public_gists']
+
+  def to_dict(self):
+    return {'name':self.name,
+            'followers':self.followers,
+            'following':self.following,
+            'public_repos':self.public_repos,
+            'public_gists':self.public_gists,
+            'contributions':self.contributions
+            }
