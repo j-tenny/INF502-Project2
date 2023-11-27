@@ -66,10 +66,11 @@ class Repository:
         return pd.DataFrame(self.pull_requests_to_json())
 
     def total_user(self):
-        total_user = 0
-        for name in range(len(self.owner_name)):
-            total_user += (name)
-        return total_user
+        total_users_list = []
+        for pull in self.pull_requests:
+            total_users_list.append(pull.user)
+        total_users = len(total_users_list) 
+        return total_users
     
     def total_pulls_closed(self):
         pull_closed_total = 0
