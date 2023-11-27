@@ -1,26 +1,5 @@
 import os
 
-def save_as_csv(file_name, csv_record):
-    # Check if the file exists
-    file_exists = os.path.isfile(file_name)
-
-    # Open the file in append mode
-    with open(file_name, 'a') as file:
-        # If it's a new file, write the header
-        if not file_exists:
-            header = csv_record.split("\n")[0]
-            file.write(header + '\n')
-
-        # Write the CSV record
-        file.write(csv_record + '\n')
-        
-class GitHubLicense:
-    def __init__(self, name, spdx_id):
-        self.name = name
-        self.spdx_id = spdx_id
-
-    def __str__(self):
-        return f"{self.name} ({self.spdx_id})"
 
 # Define a class to represent a GitHub User
 class GitHubUser:
@@ -29,13 +8,23 @@ class GitHubUser:
 
     def __str__(self):
         return f"{self.login}"
-    
+
     def to_csv_record(self):
         return f"'login'\n'{self.login}'"
-    
+
     def save_to_csv(self):
         save_as_csv('users.csv', self.to_csv_record())
-        
+
+# Placeholder definition for the GitHubLicense class
+class GitHubLicense:
+    def __init__(self, name, spdx_id):
+        self.name = name
+        self.spdx_id = spdx_id
+
+    def __str__(self):
+        return f"{self.name} ({self.spdx_id})"
+
+
 class Repository:
     # TODO: create data structures for github users and add functionality to summarize users who contributed to this repo
     def __init__(self, owner_name, repo_name, token=None):
@@ -88,7 +77,7 @@ class Repository:
 
     def __repr__(self):
         return f'Repository(owner_name: {self.owner_name}, repo_name: {self.repo_name}, n_pull_requests: {len(self.pull_requests)})'
-    
+
     def to_csv_record(self):
         return f"'owner_name', 'repo_name'\n'{self.owner_name}', '{self.repo_name}'"
 
@@ -149,7 +138,7 @@ class PullRequest:
 
     def get_num_commits(self):
         commits_json = get_github_api_request(url=self.commits_url,convert_json=True,token=self.__token)
-        
+
         self.num_commits = len(commits_json)
 
     def get_diff_metrics(self):
@@ -188,6 +177,34 @@ class PullRequest:
     def __repr__(self):
         return f'PullRequest(number:{self.number}, title:{self.title})'
 
+def get_github_api_request(url,convert_json=True, token=None):
+    import requests
+
+    if token is None:
+        # Make a GET request to retrieve pull requests
+        response = requests.get(url)
+    else:
+        # Headers including the Authorization token
+        headers = {"Authorization": f"token {token}"}
+
+        # Make a GET request to retrieve pull requests
+        response = requests.get(url, headers=headers)
+
+    # Check if the request was successful (status code 200)
+    if response.status_code == 200:
+        # Parse the JSON response
+        if convert_json:
+            return response.json()
+        else:
+            return response.text
+    elif response.status_code == 403:
+        raise PermissionError('Server Error 403: Access to Github API denied. Consider creating and using an'
+                              ' authentication token https://github.com/settings/tokens?type=beta. Read more: \n\n'+response.text)
+    elif response.status_code == 404:
+        raise ValueError('Error 404: No data found at this URL')
+    else:
+        raise ConnectionError(f"Failed to access Github API. Status code: {response.status_code} \n\n"+response.text)
+
 
     def to_csv_record(self):
         return f"'title', 'number', 'user'\n'{self.title}', '{self.number}', '{self.user}'"
@@ -225,3 +242,17 @@ def get_github_api_request(url,convert_json=True, token=None):
         raise ValueError('Error 404: No data found at this URL')
     else:
         raise ConnectionError(f"Failed to access Github API. Status code: {response.status_code} \n\n"+response.text)
+
+def save_as_csv(file_name, csv_record):
+    # Check if the file exists
+    file_exists = os.path.isfile(file_name)
+
+    # Open the file in append mode
+    with open(file_name, 'a') as file:
+        # If it's a new file, write the header
+        if not file_exists:
+            header = csv_record.split("\n")[0]
+            file.write(header + '\n')
+
+        # Write the CSV record
+        file.write(csv_record + '\n')
