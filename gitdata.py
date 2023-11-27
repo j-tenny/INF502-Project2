@@ -75,6 +75,36 @@ class Repository:
         import pandas as pd
         return pd.DataFrame(self.pull_requests_to_json())
 
+    def total_user(self):
+        total_users_set = set()
+        for pull in self.pull_requests:
+            total_users_set.add(pull.user)
+        total_users = len(total_users_set) 
+        return total_users
+    
+    def total_pulls_closed(self):
+        pull_closed_total = 0
+        for pull in self.pull_requests:
+            if pull.state == 'closed':
+                pull_closed_total += 1
+        return pull_closed_total
+    
+    def total_pulls_open(self):
+        pull_open_total = 0
+        for pull in self.pull_requests:
+            if pull.state == 'open':
+                pull_open_total += 1
+        return pull_open_total
+    
+    def oldest(self):
+        dates = []
+        for pull in self.pull_requests:
+            if pull.state == 'open':
+                dates.append(pull.created_at)
+        dates.sort()
+        oldest_date = dates[0]
+        return oldest_date
+        
     def __repr__(self):
         return f'Repository(owner_name: {self.owner_name}, repo_name: {self.repo_name}, n_pull_requests: {len(self.pull_requests)})'
 
@@ -177,42 +207,6 @@ class PullRequest:
     def __repr__(self):
         return f'PullRequest(number:{self.number}, title:{self.title})'
 
-def get_github_api_request(url,convert_json=True, token=None):
-    import requests
-
-    if token is None:
-        # Make a GET request to retrieve pull requests
-        response = requests.get(url)
-    else:
-        # Headers including the Authorization token
-        headers = {"Authorization": f"token {token}"}
-
-        # Make a GET request to retrieve pull requests
-        response = requests.get(url, headers=headers)
-
-    # Check if the request was successful (status code 200)
-    if response.status_code == 200:
-        # Parse the JSON response
-        if convert_json:
-            return response.json()
-        else:
-            return response.text
-    elif response.status_code == 403:
-        raise PermissionError('Server Error 403: Access to Github API denied. Consider creating and using an'
-                              ' authentication token https://github.com/settings/tokens?type=beta. Read more: \n\n'+response.text)
-    elif response.status_code == 404:
-        raise ValueError('Error 404: No data found at this URL')
-    else:
-        raise ConnectionError(f"Failed to access Github API. Status code: {response.status_code} \n\n"+response.text)
-
-
-    def to_csv_record(self):
-        return f"'title', 'number', 'user'\n'{self.title}', '{self.number}', '{self.user}'"
-
-    def save_to_csv(self, owner_name, repo_name):
-        # Save to repos/owner-repo.csv
-        repo_csv_path = os.path.join('repos', f'{owner_name}-{repo_name}.csv')
-        save_as_csv(repo_csv_path, self.to_csv_record())
 
 
 def get_github_api_request(url,convert_json=True, token=None):
@@ -242,6 +236,7 @@ def get_github_api_request(url,convert_json=True, token=None):
         raise ValueError('Error 404: No data found at this URL')
     else:
         raise ConnectionError(f"Failed to access Github API. Status code: {response.status_code} \n\n"+response.text)
+
 
 def save_as_csv(file_name, csv_record):
     # Check if the file exists
@@ -256,3 +251,4 @@ def save_as_csv(file_name, csv_record):
 
         # Write the CSV record
         file.write(csv_record + '\n')
+
