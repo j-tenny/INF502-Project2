@@ -67,31 +67,33 @@ class Repository:
 
     def total_user(self):
         total_user = 0
-        for sum in self.owner_name:
-            total_user += sum
-        return total_sum
+        for name in range(len(self.owner_name)):
+            total_user += (name)
+        return total_user
     
     def total_pulls_closed(self):
         pull_closed_total = 0
-        for sum in PullRequest.closed_at:
-            pull_closed_total += sum
+        for pull in self.pull_requests:
+            if pull.state == 'closed':
+                pull_closed_total += 1
         return pull_closed_total
     
     def total_pulls_open(self):
         pull_open_total = 0
-        for pull in self.pull_request:
-            if pull.status == 'open':
+        for pull in self.pull_requests:
+            if pull.state == 'open':
                 pull_open_total += 1
         return pull_open_total
     
     def oldest(self):
         dates = []
-        for pull in created_at:
-            dates.append(pull)
-            dates.sort()
-        oldest = dates[0]
-        return oldest
-
+        for pull in self.pull_requests:
+            if pull.state == 'open':
+                dates.append(pull.created_at)
+        dates.sort()
+        oldest_date = dates[0]
+        return oldest_date
+        
     def __repr__(self):
         return f'Repository(owner_name: {self.owner_name}, repo_name: {self.repo_name}, n_pull_requests: {len(self.pull_requests)})'
 class PullRequest:
