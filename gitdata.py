@@ -1,4 +1,4 @@
-<<<<<<< HEAD
+import os
 class AllRepositories:
     def __init__(self, repos):
         self.repos = repos
@@ -90,8 +90,10 @@ class AllRepositories:
         df = pd.DataFrame(repo_users)
         df.plot.bar(x='users', y='repo_name', rot=0)
         return None
-        
-=======
+
+
+
+
 # Placeholder definition for the GitHubLicense class
 class GitHubLicense:
     def __init__(self, name, spdx_id):
@@ -101,17 +103,8 @@ class GitHubLicense:
     def __str__(self):
         return f"{self.name} ({self.spdx_id})"
 
-# Define a class to represent a GitHub User
-class GitHubUser:
-    def __init__(self, login):
-        self.login = login
-
-    def __str__(self):
-        return f"{self.login}"
->>>>>>> main
 
 class Repository:
-    # TODO: create data structures for github users and add functionality to summarize users who contributed to this repo
     def __init__(self, owner_name, repo_name, token=None):
         # Assign properties
         self.owner_name = owner_name
@@ -163,8 +156,6 @@ class Repository:
         return pd.DataFrame(self.pull_requests_to_json())
 
 
-
-
     def get_users_as_json(self, username):
         # GitHub API endpoint for pull requests
         url = f"https://api.github.com/users/{username}"
@@ -209,9 +200,52 @@ class Repository:
     def users_to_pandas(self):
         import pandas as pd
         return pd.DataFrame(self.users_to_json())
-
+      
+    
+    def total_user(self):
+        total_users_set = set()
+        for pull in self.pull_requests:
+            total_users_set.add(pull.user)
+        total_users = len(total_users_set) 
+        return total_users
+    
+    def total_pulls_closed(self):
+        pull_closed_total = 0
+        for pull in self.pull_requests:
+            if pull.state == 'closed':
+                pull_closed_total += 1
+        return pull_closed_total
+    
+    def total_pulls_open(self):
+        pull_open_total = 0
+        for pull in self.pull_requests:
+            if pull.state == 'open':
+                pull_open_total += 1
+        return pull_open_total
+    
+    def oldest(self):
+        dates = []
+        for pull in self.pull_requests:
+            if pull.state == 'open':
+                dates.append(pull.created_at)
+        dates.sort()
+        oldest_date = dates[0]
+        return oldest_date
+        
     def __repr__(self):
         return f'Repository(owner_name: {self.owner_name}, repo_name: {self.repo_name}, n_pull_requests: {len(self.pull_requests)})'
+
+    def to_csv_record(self):
+        return f"'owner_name', 'repo_name'\n'{self.owner_name}', '{self.repo_name}'"
+
+    def save_to_csv(self):
+        # Save to repositories.csv
+        save_as_csv('repositories.csv', self.to_csv_record())
+
+        # Save to repos/owner-repo.csv
+        repo_csv_path = os.path.join('repos', f'{self.owner_name}-{self.repo_name}.csv')
+        save_as_csv(repo_csv_path, self.to_csv_record())
+
     
 class PullRequest:
   def __init__(self,title:str = None, number:int = None, body:str = None, state:str = None, created_at:str = None, closed_at:str = None,
@@ -302,6 +336,44 @@ class PullRequest:
   def __repr__(self):
     return f'PullRequest(number:{self.number}, title:{self.title})'
 
+
+
+class User:
+  def __init__(self, name, followers:str = None, following:int = None, repos:str = None, gists:str = None, token=None):
+      
+    self.name = name
+    self.followers = followers
+    self.following = following
+    self.public_repos = public_repos
+    self.public_gists = public_gists
+    self.contributions = 1
+
+    self.__token = token #Store token for making API requests. DO NOT INCLUDE IN OUTPUTS.
+
+  def fill_from_json(self,json):
+    self.followers = json['followers']
+    self.following = json['following']
+    self.public_repos = json['public_repos']
+    self.public_gists = json['public_gists']
+
+  def to_dict(self):
+    return {'name':self.name,
+            'followers':self.followers,
+            'following':self.following,
+            'public_repos':self.public_repos,
+            'public_gists':self.public_gists,
+            'contributions':self.contributions
+            }
+  
+  def to_csv_record(self):
+    #TODO: Update this function now that the users class is done
+    return f"'login'\n'{self.login}'"
+
+  def save_to_csv(self):
+    #TODO: Update this function now that the users class is done
+      save_as_csv('users.csv', self.to_csv_record())
+      
+      
 def get_github_api_request(url,convert_json=True, token=None):
     import requests
 
@@ -332,29 +404,18 @@ def get_github_api_request(url,convert_json=True, token=None):
 
 
 
-class User:
-  def __init__(self, name, followers:str = None, following:int = None, repos:str = None, gists:str = None, token=None):
+
       
-    self.name = name
-    self.followers = followers
-    self.following = following
-    self.public_repos = public_repos
-    self.public_gists = public_gists
-    self.contributions = 1
+def save_as_csv(file_name, csv_record):
+    # Check if the file exists
+    file_exists = os.path.isfile(file_name)
 
-    self.__token = token #Store token for making API requests. DO NOT INCLUDE IN OUTPUTS.
+    # Open the file in append mode
+    with open(file_name, 'a') as file:
+        # If it's a new file, write the header
+        if not file_exists:
+            header = csv_record.split("\n")[0]
+            file.write(header + '\n')
 
-  def fill_from_json(self,json):
-    self.followers = json['followers']
-    self.following = json['following']
-    self.public_repos = json['public_repos']
-    self.public_gists = json['public_gists']
-
-  def to_dict(self):
-    return {'name':self.name,
-            'followers':self.followers,
-            'following':self.following,
-            'public_repos':self.public_repos,
-            'public_gists':self.public_gists,
-            'contributions':self.contributions
-            }
+        # Write the CSV record
+        file.write(csv_record + '\n')
