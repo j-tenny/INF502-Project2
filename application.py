@@ -25,6 +25,7 @@ class Application:
         self.export_data_menu = ExportDataMenu(parent_app=self)
         self.input_token_menu = InputTokenMenu(parent_app=self)
 
+
         # Create empty directories to store data
         self.data_dir = data_dir
         self.repos_dir = data_dir + 'repos/'
@@ -42,6 +43,7 @@ class Application:
         else:
             shutil.rmtree(self.repos_dir)
             os.mkdir(self.repos_dir)
+
 
         # Initialize token
         if token is not None:
@@ -391,11 +393,13 @@ class ExportDataMenu:
             print()
             user_input = input('Input file path to export directory or type EXIT > ').strip()
 
+
             if user_input.upper() == 'EXIT':
                 valid = True
                 self.app.change_menu(self.app.main_menu)
 
             else:
+
                 try:
                     dir = pathlib.Path(user_input)
 
