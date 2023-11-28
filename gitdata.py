@@ -57,7 +57,7 @@ class AllRepositories:
             #plot the tallies per day
             ax = analysis_days.plot.line(x='date', y='tally')
             #display and save fig
-            print(ax)
+            #print(ax)
             ax.figure.savefig(self.output_filepath + 'pulls_per_day.png')
 
         except Exception as e:
@@ -90,7 +90,7 @@ class AllRepositories:
             #plot open vs close per day, this will automatically color between open and close tallies
             ax = analysis_days.plot.line(x='date')
             #display and save fig
-            print(ax)
+            #print(ax)
             ax.figure.savefig(self.output_filepath + 'open_vs_closed_per_day.png')
 
         except Exception as e:
@@ -115,7 +115,7 @@ class AllRepositories:
         #create dataframe from list of dicts, display, and save fig  
         df = pd.DataFrame(repo_users)
         ax = df.plot.bar(x='repo_name', y='users', rot=0)
-        print(ax)
+        #print(ax)
         ax.figure.savefig(self.output_filepath + 'users_per_repository.png')
         return None
 
