@@ -435,6 +435,9 @@ def get_github_api_request(url,convert_json=True, token=None):
             return response.json()
         else:
             return response.text
+    elif response.status_code == 401:
+        raise PermissionError('Server Error 401: Access to Github API denied. You may be using an expired access token.'
+                              'Create new token at https://github.com/settings/tokens?type=beta. Read more: \n\n'+response.text)
     elif response.status_code == 403:
         raise PermissionError('Server Error 403: Access to Github API denied. Consider creating and using an'
                               ' authentication token https://github.com/settings/tokens?type=beta. Read more: \n\n'+response.text)
