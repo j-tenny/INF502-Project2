@@ -243,6 +243,20 @@ class Repository:
             total_users_set.add(pull.user)
         total_users = len(total_users_set) 
         return total_users
+
+    def user_correlations(self):
+        import pandas as pd
+        #convert user data to a dataframe
+        df = self.users_to_pandas()
+        
+        #grab the four metrics we need to run pairwise correlation
+        corr_subset = df[['followers','following','public_repos','contributions']]
+        
+        #calculate pairwise correlations between fields
+        correlations = corr_subset.corr()
+
+        #display results
+        print(correlations)
     
     def total_pulls_closed(self):
         pull_closed_total = 0
