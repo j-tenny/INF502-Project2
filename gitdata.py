@@ -19,9 +19,15 @@ class AllRepositories:
 
     def fill_filepath(self):
         import os
+
+        if not os.path.exists('output_pngs'):
+            os.mkdir('output_pngs')
+        
         outdir = f"output_pngs/analysis_{AllRepositories.analysis_number}/"
+        
         if not os.path.exists(outdir):
             os.mkdir(outdir)
+            
         self.output_filepath = outdir
 
     def fill_analysis_dates(self):
