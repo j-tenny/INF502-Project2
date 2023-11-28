@@ -15,7 +15,7 @@ class AllRepositories:
 
         # use datetime package to create start and end dates for the last 60 days
         self.end_date = date.today()
-        self.start_date = end_date - timedelta(days=59)
+        self.start_date = self.end_date - timedelta(days=59)
 
     def display_pulls_per_day(self):
         import pandas as pd
@@ -80,7 +80,7 @@ class AllRepositories:
         repo_users = list()
         #iterate across all repos
         for repo in self.repos:
-            initialize dictionary
+            #initialize dictionary
             temp_dict = dict()
             temp_dict['repo_name'] = repo.repo_name
             temp_dict['users'] = len(repo.users)
@@ -127,7 +127,7 @@ class Repository:
 
         return pull_requests_json
 
-    def get_pulls(self,token=None):
+    def get_pulls(self):
         # Get pull requests from github in json format
         pulls_json = self.get_pulls_as_json()
 
@@ -160,32 +160,34 @@ class Repository:
         # GitHub API endpoint for pull requests
         url = f"https://api.github.com/users/{username}"
 
-        users = get_github_api_request(url = url,convert_json=True,token=self.__token)
+        users_json = get_github_api_request(url = url,convert_json=True,token=self.__token)
 
         return users_json
 
     def get_users(self,token=None):
         # Temporarily create an empty list
         user_list = list()
+        user_names = list()
         
         #iterate across pull requests
         for pull in self.pull_requests:
             #check if name in user list
-            check = [i for i,d in enumerate(user_list) if d['name'] == pull.user]
-            
-            if len(check) == 0:
+
+            if pull.user not in user_names:
                 # Get pull requests from github in json format
-                user_json = self.get_pulls_as_json( pull.user )
+                user_json = self.get_users_as_json( pull.user )
 
                 # Convert each user to a user object and add it
                 # to the list of users stored in this Repository object
                 user_instance = User(name = pull.user, token=self.__token)
                 user_instance.fill_from_json(user_json)
                 user_list.append(user_instance)
+                user_names.append(pull.user)
 
             else:
                 #otherwise add another contribution tally to the user
-                user_list[check[0]].contributions += 1
+                existing_user_index = user_names.index(pull.user)
+                user_list[existing_user_index].contributions += 1
 
         # Convert list to tuple so it's safer from accidental changes
         self.users = tuple(user_list)
@@ -339,7 +341,7 @@ class PullRequest:
 
 
 class User:
-  def __init__(self, name, followers:str = None, following:int = None, repos:str = None, gists:str = None, token=None):
+  def __init__(self, name, followers:str = None, following:int = None, public_repos:str = None, public_gists:str = None, token=None):
       
     self.name = name
     self.followers = followers
@@ -367,7 +369,7 @@ class User:
   
   def to_csv_record(self):
     #TODO: Update this function now that the users class is done
-    return f"'login'\n'{self.login}'"
+    return f"'name'\n'{self.name}'"
 
   def save_to_csv(self):
     #TODO: Update this function now that the users class is done
