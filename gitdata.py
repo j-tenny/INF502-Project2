@@ -3,11 +3,12 @@ class AllRepositories:
 
     analysis_number = 0
     
-    def __init__(self, repos):
+    def __init__(self, repos,output_filepath=None):
         self.repos = repos
         self.start_date = None
         self.end_date = None
-        self.output_filepath = None
+        self.output_filepath = output_filepath
+
         AllRepositories.analysis_number += 1
 
         self.fill_analysis_dates()
@@ -20,10 +21,14 @@ class AllRepositories:
     def fill_filepath(self):
         import os
 
-        if not os.path.exists('output_pngs'):
-            os.mkdir('output_pngs')
-        
-        outdir = f"output_pngs/analysis_{AllRepositories.analysis_number}/"
+        if self.output_filepath is not None:
+            if not os.path.exists(self.output_filepath):
+                os.mkdir(self.output_filepath)
+
+        if self.output_filepath is None:
+            outdir = f"all_repos_analysis_{AllRepositories.analysis_number}/"
+        else:
+            outdir = self.output_filepath + '/' + f"all_repos_analysis_{AllRepositories.analysis_number}/"
         
         if not os.path.exists(outdir):
             os.mkdir(outdir)
@@ -256,10 +261,13 @@ class Repository:
     def oldest(self):
         dates = []
         for pull in self.pull_requests:
-            if pull.state == 'open':
-                dates.append(pull.created_at)
+            #if pull.state == 'open':
+            dates.append(pull.created_at)
         dates.sort()
-        oldest_date = dates[0]
+        if len(dates) >= 0:
+            oldest_date = dates[0]
+        else:
+            oldest_date = 'NA'
         return oldest_date
         
     def __repr__(self):
@@ -274,7 +282,7 @@ class Repository:
 
         # Save to repos/owner-repo.csv
         repo_csv_path = os.path.join('repos', f'{self.owner_name}-{self.repo_name}.csv')
-        save_as_csv(repo_csv_path, self.to_csv_record())
+        save_as_csv(repo_csv_path, self)
 
     
 class PullRequest:
@@ -366,6 +374,9 @@ class PullRequest:
   def __repr__(self):
     return f'PullRequest(number:{self.number}, title:{self.title})'
 
+  def to_csv_record(self):
+    return f"\"title\", \"number\", 'body', 'state', 'created_at', 'closed_at', 'user', 'num_commits', 'num_additions', 'num_deletions', 'num_changed_files'\n" \
+            f"'{self.title}', {self.number}, '{self.body}', '{self.state}', '{self.created_at}', '{self.closed_at}', '{self.user}', {self.num_commits}, {self.num_additions}, {self.num_deletions}, {self.num_changed_files}"
 
 
 class User:
@@ -397,11 +408,11 @@ class User:
   
   def to_csv_record(self):
     #TODO: Update this function now that the users class is done
-    return f"'name'\n'{self.name}'"
+    return f"'name', 'followers', 'following', 'public_repos', 'public_gists', 'contributions'\n" \
+           f"'{self.name}', '{self.followers}', '{self.following}', '{self.public_repos}', '{self.public_gists}', '{self.contributions}'"
 
   def save_to_csv(self):
-    #TODO: Update this function now that the users class is done
-      save_as_csv('users.csv', self.to_csv_record())
+      save_as_csv('users.csv', self)
       
       
 def get_github_api_request(url,convert_json=True, token=None):
@@ -436,16 +447,19 @@ def get_github_api_request(url,convert_json=True, token=None):
 
 
       
-def save_as_csv(file_name, csv_record):
+def save_as_csv(file_name, gitdata_object):
     # Check if the file exists
-    file_exists = os.path.isfile(file_name)
+    csv_record = gitdata_object.to_csv_record()
+    file_exists = os.path.exists(file_name)
+    record_split = csv_record.split("\n")
+    header = record_split[0]
+    data = record_split[1]
 
     # Open the file in append mode
     with open(file_name, 'a') as file:
         # If it's a new file, write the header
         if not file_exists:
-            header = csv_record.split("\n")[0]
             file.write(header + '\n')
 
         # Write the CSV record
-        file.write(csv_record + '\n')
+        file.write(data + '\n')
