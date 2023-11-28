@@ -1,14 +1,27 @@
 import os
 class AllRepositories:
+
+    analysis_number = 0
+    
     def __init__(self, repos):
         self.repos = repos
         self.start_date = None
         self.end_date = None
+        self.output_filepath = None
+        AllRepositories.analysis_number += 1
 
         self.fill_analysis_dates()
         self.display_pulls_per_day()
         self.display_open_vs_closed_per_day()
         self.display_users_per_repository()
+        self.fill_filepath
+
+    def fill_filepath(self):
+        import os
+        outdir = f"output_pngs/analysis_{AllRepositories.analysis_number}/"
+        if not os.path.exists(outdir):
+            os.mkdir(outdir)
+        return outdir
 
     def fill_analysis_dates(self):
         from datetime import date, timedelta
@@ -35,7 +48,10 @@ class AllRepositories:
             #create a tally column that queries our pull requests to find the number of requests opened for each day
             analysis_days['tally'] = analysis_days['date'].apply( lambda x: len(df.query("created_at == @x")))
             #plot the tallies per day
-            analysis_days.plot.line(x='date', y='tally')
+            ax = analysis_days.plot.line(x='date', y='tally')
+            #display and save fig
+            print(ax)
+            ax.figure.savefig(self.output_filepath + 'pulls_per_day.png')
 
         except Exception as e:
             #this is just for troubleshooting our code and testing, we shouldn't need it once we have this perfected
@@ -65,7 +81,10 @@ class AllRepositories:
             analysis_days['open_tally'] = analysis_days['date'].apply( lambda x: len(df.query("created_at == @x")))
             analysis_days['close_tally'] = analysis_days['date'].apply( lambda x: len(df.query("closed_at == @x")))
             #plot open vs close per day, this will automatically color between open and close tallies
-            analysis_days.plot.line(x='date')
+            ax = analysis_days.plot.line(x='date')
+            #display and save fig
+            print(ax)
+            ax.figure.savefig(self.output_filepath + 'open_vs_closed_per_day.png')
 
         except Exception as e:
             #this is just for troubleshooting our code and testing, we shouldn't need it once we have this perfected
@@ -86,9 +105,11 @@ class AllRepositories:
             temp_dict['users'] = len(repo.users)
             repo_users.append(temp_dict)
             
-        #create dataframe from list of dicts and display bar plot    
+        #create dataframe from list of dicts, display, and save fig  
         df = pd.DataFrame(repo_users)
-        df.plot.bar(x='users', y='repo_name', rot=0)
+        ax = df.plot.bar(x='users', y='repo_name', rot=0)
+        print(ax)
+        ax.figure.savefig(self.output_filepath + 'users_per_repository.png')
         return None
 
 
