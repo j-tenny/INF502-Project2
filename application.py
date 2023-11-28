@@ -7,14 +7,13 @@ class Application:
         # Store specified menu width
         self.menu_width = menu_width
 
-        # Initialize token
-        self._token = token
-
         # Initialize an empty list to store repo data
         self.repos = list()
 
         # Initialize selected repo
         self.selected_repo_index = 0
+
+
 
         # Create an instance of each menu class
         self.welcome_menu = WelcomeMenu(parent_app=self)
@@ -24,6 +23,7 @@ class Application:
         self.select_repo_menu = SelectRepoMenu(parent_app=self)
         self.repo_analysis_menu = RepoAnalysisMenu(parent_app=self)
         self.export_data_menu = ExportDataMenu(parent_app=self)
+        self.input_token_menu = InputTokenMenu(parent_app=self)
 
         # Create empty directories to store data
         self.data_dir = data_dir
@@ -43,7 +43,33 @@ class Application:
             shutil.rmtree(self.repos_dir)
             os.mkdir(self.repos_dir)
 
+        # Initialize token
+        if token is not None:
+            # If token parameter is used, create a file to store the token
+            self._token = token
+            with open('mytoken.txt', 'w') as f:
+                f.write(token)
 
+        elif os.path.exists('mytoken.txt'):
+            # Otherwise, try to use existing token from file
+            try:
+                with open('mytoken.txt') as f:
+                    token = f.read()
+                # Test the token to see if the credentials are good
+                gitdata.get_github_api_request('https://api.github.com/user', token=token)
+                # If no exception is generated, move on
+                self._token = token
+            except:
+                # If credentials don't work, delete the token file and prompt user input later
+                try:
+                    os.remove('mytoken.txt')
+                except:
+                    print('WARNING: COULD NOT DELETE BAD TOKEN FILE')
+
+                self._token = None
+
+        else:
+            self._token = None
 
 
 
@@ -82,7 +108,12 @@ class WelcomeMenu:
         print()
         print()
         input('PRESS ENTER TO CONTINUE')
-        self.app.change_menu(self.app.main_menu)
+
+        if self.app._token is None:
+            self.app.change_menu(self.app.input_token_menu)
+        else:
+            self.app.change_menu(self.app.main_menu)
+
 class MainMenu:
     def __init__(self,parent_app:Application):
         self.name = 'Main Menu'
@@ -344,32 +375,90 @@ class ExportDataMenu:
         self.app = parent_app
 
     def display(self):
+        import shutil
+        import os
+        import pathlib
+
         print()
         # Display menu option for each stored repo
-        print('Export (temporary) session data to another directory')
+        print('Export session data to another directory')
         print()
 
         valid = False
+        name_valid = False
         while not valid:
             # Let user select a menu option
-            user_input = input('Input a directory path type EXIT:').strip()
+            print()
+            user_input = input('Input file path to export directory or type EXIT > ').strip()
 
             if user_input.upper() == 'EXIT':
                 valid = True
                 self.app.change_menu(self.app.main_menu)
 
             else:
-                print('Function not implemented yet')
-                input('Press ENTER to return to main menu')
+                try:
+                    dir = pathlib.Path(user_input)
+
+                    if dir.is_dir():
+                        while not name_valid:
+                            print()
+                            export_name = input('Enter a name for this export or type EXIT > ').strip()
+                            if export_name.upper() == 'EXIT':
+                                name_valid = True
+                            else:
+                                dst = dir.joinpath(pathlib.Path(export_name))
+                                if not os.path.exists(dst):
+                                    shutil.copytree(self.app.data_dir, dst)
+                                    valid = True
+                                    name_valid = True
+                                    print('Data succesfully copied to:',dst.absolute())
+                                    print()
+                                    input('Press ENTER to return to main menu')
+                                    self.app.change_menu(self.app.main_menu)
+                                else:
+                                    print('An export with this name already exists in this location.')
+
+                    else:
+                        print(f'{dir.absolute()} is not a directory on your computer.')
+
+                except Exception as e:
+                    print(str(e))
+
+
+
+class InputTokenMenu:
+    def __init__(self,parent_app):
+        self.name = 'Input Github Acces Token'
+        self.app = parent_app
+
+    def display(self):
+        print('It is recommended that you create a Github personal access token to run this app')
+        print('A read-only access token is all that will be needed')
+        print('Try this link: https://github.com/settings/tokens?type=beta')
+        print('Or read these instructions: https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/managing-your-personal-access-tokens')
+        print('Or type SKIP to continue without an access token. Rate limits may limit your downloads.')
+        valid = False
+        while not valid:
+            print()
+            user_input = input('Input a Github Access Token or type SKIP > ').strip()
+            if user_input.upper() == 'SKIP':
                 valid = True
                 self.app.change_menu(self.app.main_menu)
+            else:
+                try:
+                    user = gitdata.get_github_api_request(url='https://api.github.com/user',token=user_input)
+                    with open('mytoken.txt','w') as f:
+                        f.write(user_input)
+                    print('Successfully registered this token owned by',user['login'])
+                    input('Press ENTER to continue')
+                    valid = True
+                    self.app.change_menu(self.app.main_menu)
+                except PermissionError:
+                    print('This token does not appear to be valid')
+                except Exception as e:
+                    print(str(e))
 
-    def process_user_input(self,user_input):
-        # Assign index. Note, menu options started at 1 but repo index starts at 0
-        self.app.selected_repo_index = user_input - 1
 
-        # Go to analysis menu
-        self.app.change_menu(self.app.repo_analysis_menu)
 
 
 def clear_screen():
