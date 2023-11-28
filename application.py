@@ -1,6 +1,9 @@
+import os.path
+
 import gitdata
 class Application:
-    def __init__(self,menu_width,token=None):
+    def __init__(self,menu_width,data_dir = 'Temp_session_data/',token=None):
+        import shutil
         # Store specified menu width
         self.menu_width = menu_width
 
@@ -20,6 +23,26 @@ class Application:
         self.get_repo_menu = GetRepoMenu(parent_app=self)
         self.select_repo_menu = SelectRepoMenu(parent_app=self)
         self.repo_analysis_menu = RepoAnalysisMenu(parent_app=self)
+        self.export_data_menu = ExportDataMenu(parent_app=self)
+
+        # Create empty directories to store data
+        self.data_dir = data_dir
+        self.repos_dir = data_dir + 'repos/'
+        self.repositories_csv_path = self.data_dir + 'repositories.csv'
+        self.users_csv_path = self.data_dir + 'users.csv'
+        if not os.path.exists(self.data_dir):
+            os.mkdir(self.data_dir)
+        else:
+            if os.path.exists(self.repositories_csv_path):
+                os.remove(self.repositories_csv_path)
+            if os.path.exists(self.users_csv_path):
+                os.remove(self.users_csv_path)
+        if not os.path.exists(self.repos_dir):
+            os.mkdir(self.repos_dir)
+        else:
+            shutil.rmtree(self.repos_dir)
+            os.mkdir(self.repos_dir)
+
 
 
 
@@ -69,8 +92,9 @@ class MainMenu:
         print('[1] Download data for a repository')
         print('[2] Summarize a repository which has already been downloaded')
         print('[3] Summarize all repositories that have been downloaded in this session')
-        print('[4] Exit the program')
-        user_input = validate_menu_input(num_options=4)
+        print('[4] Export session data')
+        print('[5] Exit the program')
+        user_input = validate_menu_input(num_options=5)
         self.process_user_input(user_input)
 
     def process_user_input(self,user_input):
@@ -80,6 +104,9 @@ class MainMenu:
             self.app.change_menu(self.app.select_repo_menu)
         elif user_input==3:
             self.app.change_menu(self.app.all_repos_menu)
+        elif user_input==4:
+            self.app.change_menu(self.app.export_data_menu)
+
         else:
             import sys
             sys.exit()
@@ -91,19 +118,16 @@ class AllReposMenu:
         self.app = parent_app
 
     def display(self):
-        # TODO: Create and hook up functionality for all repos analysis
 
-        # Display title and menu options
+        print('Creating and displaying visualizations for all repositories...')
+        all_repos = gitdata.AllRepositories(self.app.repos,output_filepath = self.app.data_dir)
+        print('Figures have been saved to: ' + os.path.abspath(all_repos.output_filepath))
         print()
-        print('This menu will allow users to summarize data about all repos on github')
-        print('[1] Return to main menu')
 
-        user_input = validate_menu_input(num_options=1)
-        self.process_user_input(user_input)
 
-    def process_user_input(self,user_input):
-        if user_input==1:
-            self.app.change_menu(self.app.main_menu)
+        input('Press ENTER to return to main menu')
+
+        self.app.change_menu(self.app.main_menu)
 
 
 class GetRepoMenu:
@@ -150,6 +174,14 @@ class GetRepoMenu:
 
         # Append this repo data to the app's stored repo data
         self.app.repos.append(repo_data)
+
+        # Append repo data to CSVs
+        pull_csv_path = self.app.repos_dir+repo_data.owner_name+'-'+repo_data.repo_name+'.csv'
+        gitdata.save_as_csv(self.app.repositories_csv_path,repo_data)
+        for user in repo_data.users:
+            gitdata.save_as_csv(self.app.users_csv_path, user)
+        for pull_request in repo_data.pull_requests:
+            gitdata.save_as_csv(pull_csv_path, pull_request)
 
         # Set selected_repo_index to the newly downloaded repo
         self.app.selected_repo_index = len(self.app.repos) - 1
@@ -248,15 +280,20 @@ class RepoAnalysisMenu:
         self.process_user_input(user_input)
 
     def process_user_input(self,user_input):
+        repo = self.app.repos[self.app.selected_repo_index]
         if user_input==1:
-            pulls = self.app.repos[self.app.selected_repo_index].pull_requests
+            pulls = repo.pull_requests
             for pull in pulls:
                 print(str(pull))
             self.display()
 
         elif user_input==2:
-            # TODO: Hook up function to display repository summary
-            print('Function not implemented yet')
+            print('Number of users who submitted pull requests:'.rjust(44), repo.total_user())
+            print('Number of closed pull requests:'.rjust(44), repo.total_pulls_closed())
+            print('Number of open pull requests:'.rjust(44), repo.total_pulls_open())
+            print('Date opened for oldest pull request:'.rjust(44), repo.oldest())
+            # TODO: Add visualizations
+
             self.display()
 
         elif user_input==3:
@@ -293,6 +330,39 @@ class SelectRepoMenu:
             self.app.change_menu(self.app.main_menu)
         else:
             self.process_user_input(user_input)
+
+    def process_user_input(self,user_input):
+        # Assign index. Note, menu options started at 1 but repo index starts at 0
+        self.app.selected_repo_index = user_input - 1
+
+        # Go to analysis menu
+        self.app.change_menu(self.app.repo_analysis_menu)
+
+class ExportDataMenu:
+    def __init__(self,parent_app):
+        self.name = 'Export Data'
+        self.app = parent_app
+
+    def display(self):
+        print()
+        # Display menu option for each stored repo
+        print('Export (temporary) session data to another directory')
+        print()
+
+        valid = False
+        while not valid:
+            # Let user select a menu option
+            user_input = input('Input a directory path type EXIT:').strip()
+
+            if user_input.upper() == 'EXIT':
+                valid = True
+                self.app.change_menu(self.app.main_menu)
+
+            else:
+                print('Function not implemented yet')
+                input('Press ENTER to return to main menu')
+                valid = True
+                self.app.change_menu(self.app.main_menu)
 
     def process_user_input(self,user_input):
         # Assign index. Note, menu options started at 1 but repo index starts at 0
