@@ -11,24 +11,25 @@ class AllRepositories:
         AllRepositories.analysis_number += 1
 
         self.fill_analysis_dates()
+        self.fill_filepath()
         self.display_pulls_per_day()
         self.display_open_vs_closed_per_day()
         self.display_users_per_repository()
-        self.fill_filepath
+        
 
     def fill_filepath(self):
         import os
         outdir = f"output_pngs/analysis_{AllRepositories.analysis_number}/"
         if not os.path.exists(outdir):
             os.mkdir(outdir)
-        return outdir
+        self.output_filepath = outdir
 
     def fill_analysis_dates(self):
         from datetime import date, timedelta
 
         # use datetime package to create start and end dates for the last 60 days
         self.end_date = date.today()
-        self.start_date = self.end_date - timedelta(days=59)
+        self.start_date = self.end_date - timedelta(days=364)
 
     def display_pulls_per_day(self):
         import pandas as pd
@@ -40,7 +41,7 @@ class AllRepositories:
         df = pd.concat(dfs)
         
         #this will remove the hours, minutes and seconds data from the created_at field and leave us with just the date
-        df['created_at'] = df.created_at.dt.floor('d')
+        df['created_at'] = df.created_at.astype('datetime64[ns]').dt.floor('d')
 
         try:
             #create dataframe of last 60 days
@@ -71,8 +72,8 @@ class AllRepositories:
         df = pd.concat(dfs)
 
         #this will remove the hours, minutes and seconds data from the created_at and closed_at fields so we only have the date
-        df['created_at'] = df.created_at.dt.floor('d')
-        df['closed_at'] = df.created_at.dt.floor('d')
+        df['created_at'] = df.created_at.astype('datetime64[ns]').dt.floor('d')
+        df['closed_at'] = df.closed_at.astype('datetime64[ns]').dt.floor('d')
 
         try:
             #create dataframe of last 60 days
@@ -107,7 +108,7 @@ class AllRepositories:
             
         #create dataframe from list of dicts, display, and save fig  
         df = pd.DataFrame(repo_users)
-        ax = df.plot.bar(x='users', y='repo_name', rot=0)
+        ax = df.plot.bar(x='repo_name', y='users', rot=0)
         print(ax)
         ax.figure.savefig(self.output_filepath + 'users_per_repository.png')
         return None
