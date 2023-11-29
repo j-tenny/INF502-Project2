@@ -478,10 +478,14 @@ class PullRequest:
     return f'PullRequest(number:{self.number}, title:{self.title})'
 
   def to_csv_record(self):
-    return f"\"title\", \"number\", 'body', 'state', 'created_at', 'closed_at', 'user', 'num_commits', 'num_additions', 'num_deletions', 'num_changed_files'\n" \
+    return f"\"title\", \"number\", \"body\", \"state\", \"created_at\", \"closed_at\", \"user\", \"num_commits\", \"num_additions\", \"num_deletions\", \"num_changed_files\"\n" \
             f"'{self.title}', {self.number}, '{self.body}', '{self.state}', '{self.created_at}', '{self.closed_at}', '{self.user}', {self.num_commits}, {self.num_additions}, {self.num_deletions}, {self.num_changed_files}"
 
-
+  def save_to_csv(self, owner_name, repo_name):
+      # Save to repos/owner-repo.csv
+      repo_csv_path = os.path.join('repos', f'{owner_name}-{repo_name}.csv')
+      save_as_csv(repo_csv_path, self.to_csv_record())
+      
 class User:
   def __init__(self, name, followers:str = None, following:int = None, public_repos:str = None, public_gists:str = None, token=None):
       
@@ -511,7 +515,7 @@ class User:
   
   def to_csv_record(self):
     #TODO: Update this function now that the users class is done
-    return f"'name', 'followers', 'following', 'public_repos', 'public_gists', 'contributions'\n" \
+    return f"\"name\', \"followers\", \"following\", \"public_repos\", \"public_gists\", \"contributions\"\n" \
            f"'{self.name}', '{self.followers}', '{self.following}', '{self.public_repos}', '{self.public_gists}', '{self.contributions}'"
 
   def save_to_csv(self):
