@@ -29,6 +29,7 @@ class Application:
         # Create empty directories to store data
         self.data_dir = data_dir
         self.repos_dir = data_dir + 'repos/'
+        self.figures_dir = data_dir + 'figures/'
         self.repositories_csv_path = self.data_dir + 'repositories.csv'
         self.users_csv_path = self.data_dir + 'users.csv'
         if not os.path.exists(self.data_dir):
@@ -43,6 +44,12 @@ class Application:
         else:
             shutil.rmtree(self.repos_dir)
             os.mkdir(self.repos_dir)
+        if not os.path.exists(self.figures_dir):
+            os.mkdir(self.figures_dir)
+        else:
+            shutil.rmtree(self.figures_dir)
+            os.mkdir(self.figures_dir)
+
 
 
         # Initialize token
@@ -152,10 +159,12 @@ class AllReposMenu:
 
     def display(self):
 
-        print('Creating and displaying visualizations for all repositories...')
-        all_repos = gitdata.AllRepositories(self.app.repos,output_filepath = self.app.data_dir)
-        print('Figures have been saved to: ' + os.path.abspath(all_repos.output_filepath))
-        print()
+        if len(self.app.repos) > 0:
+            print('Creating and displaying visualizations for all repositories...')
+            all_repos = gitdata.AllRepositories(self.app.repos,output_filepath = self.app.figures_dir)
+            print()
+        else:
+            print('You have not downloaded any repositories in this session')
 
 
         input('Press ENTER to return to main menu')
@@ -177,12 +186,13 @@ class GetRepoMenu:
         # Let user type in owner and repo name
         owner_name = self.validate_owner_input()
         repo_name = self.validate_repo_input()
+        time_window_days = self.validate_time_window()
 
         print('Downloading and analyzing Github data. Please wait...')
 
         # Use these inputs to download data for a repo
         try:
-            repo_data = gitdata.Repository(owner_name,repo_name,token=self.app._token)
+            repo_data = gitdata.Repository(owner_name,repo_name,time_window_days=time_window_days,token=self.app._token)
         except KeyError as e:
             # If an exception occurs, start over
             print(str(e))
@@ -221,6 +231,23 @@ class GetRepoMenu:
 
         # Open the repo analysis menu
         self.app.change_menu(self.app.repo_analysis_menu)
+
+    def validate_time_window(self):
+        valid = False
+        while not valid:
+            print()
+            time_window = input('Input number of days to consider in download (or type EXIT) >> ').strip()
+            if time_window.upper() != 'EXIT':
+                try:
+                    time_window = int(time_window)
+                    if time_window <= 0:
+                        raise ValueError()
+                    else:
+                        valid = True
+                except:
+                    print('You must input an integer greater than 0 (e.g. 365 for one year time window)')
+
+        return time_window
 
     def validate_owner_input(self):
         valid = False
@@ -330,8 +357,8 @@ class RepoAnalysisMenu:
             self.display()
 
         elif user_input==3:
-            # TODO: Hook up function to display user correlation data
-            print('Function not implemented yet')
+            print(repo.user_correlations())
+
             self.display()
 
         else:
