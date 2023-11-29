@@ -1,4 +1,8 @@
 import os
+
+import pandas
+
+
 class AllRepositories:
 
     analysis_number = 0
@@ -340,8 +344,40 @@ class Repository:
     def __repr__(self):
         return f'Repository(owner_name: {self.owner_name}, repo_name: {self.repo_name}, n_pull_requests: {len(self.pull_requests)})'
 
+    def to_dict(self):
+        return {'owner_name':self.owner_name,'repo_name':self.repo_name,'n_pull_requests':len(self.pull_requests),'n_users':len(self.users)}
+
+    def to_csv_header(self):
+        import csv
+        import io
+        csv_output = io.StringIO()
+        # Create a CSV writer
+        csv_writer = csv.writer(csv_output, dialect='excel')
+
+        # Write a single row that could be the headers
+        csv_writer.writerow(['owner_name', 'repo_name', 'n_pull_requests', 'n_users'])
+
+        # Get the CSV-formatted string from the virtual file
+        csv_string = csv_output.getvalue().encode('ascii', 'ignore').decode('ascii')
+        csv_output.close()
+
+        return csv_string
     def to_csv_record(self):
-        return f"'owner_name', 'repo_name'\n'{self.owner_name}', '{self.repo_name}'"
+        import csv
+        import io
+        csv_output = io.StringIO()
+        # Create a CSV writer
+        csv_writer = csv.writer(csv_output, dialect='excel')
+
+        # Write a single row that could be the headers
+        csv_writer.writerow([self.owner_name, self.repo_name, len(self.pull_requests), len(self.users)])
+
+        # Get the CSV-formatted string from the virtual file
+        csv_string = csv_output.getvalue().encode('ascii', 'ignore').decode('ascii')
+
+        csv_output.close()
+
+        return csv_string
 
     def save_to_csv(self):
         # Save to repositories.csv
@@ -477,9 +513,39 @@ class PullRequest:
   def __repr__(self):
     return f'PullRequest(number:{self.number}, title:{self.title})'
 
+  def to_csv_header(self):
+      import csv
+      import io
+      csv_output = io.StringIO()
+      # Create a CSV writer
+      csv_writer = csv.writer(csv_output, dialect='excel')
+
+      # Write a single row that could be the headers
+      csv_writer.writerow(['title','number','body','state','created_at','closed_at','user','num_commits','num_additions','num_deletions','num_changed_files'])
+
+      # Get the CSV-formatted string from the virtual file
+      csv_string = csv_output.getvalue().encode('ascii', 'ignore').decode('ascii')
+
+      csv_output.close()
+
+      return csv_string
+
   def to_csv_record(self):
-    return f"\"title\", \"number\", \"body\", \"state\", \"created_at\", \"closed_at\", \"user\", \"num_commits\", \"num_additions\", \"num_deletions\", \"num_changed_files\"\n" \
-            f"'{self.title}', {self.number}, '{self.body}', '{self.state}', '{self.created_at}', '{self.closed_at}', '{self.user}', {self.num_commits}, {self.num_additions}, {self.num_deletions}, {self.num_changed_files}"
+      import csv
+      import io
+      csv_output = io.StringIO()
+      # Create a CSV writer
+      csv_writer = csv.writer(csv_output, dialect='excel')
+
+      # Write a single row that could be the headers
+      csv_writer.writerow([self.title, self.number,self.body,self.state,self.created_at,self.closed_at,self.user,self.num_commits,self.num_additions,self.num_deletions,self.num_changed_files,])
+
+      # Get the CSV-formatted string from the virtual file
+      csv_string = csv_output.getvalue().encode('ascii', 'ignore').decode('ascii')
+
+      csv_output.close()
+
+      return csv_string
 
   def save_to_csv(self, owner_name, repo_name):
       # Save to repos/owner-repo.csv
@@ -512,11 +578,39 @@ class User:
             'public_gists':self.public_gists,
             'contributions':self.contributions
             }
-  
+  def to_csv_header(self):
+    import csv
+    import io
+    csv_output = io.StringIO()
+    # Create a CSV writer
+    csv_writer = csv.writer(csv_output, dialect='excel')
+
+    # Write a single row that could be the headers
+    csv_writer.writerow(['name', 'followers', 'following', 'public_repos', 'public_gists', 'contributions'])
+
+    # Get the CSV-formatted string from the virtual file
+    csv_string = csv_output.getvalue().encode('ascii', 'ignore').decode('ascii')
+
+    csv_output.close()
+
+    return csv_string
   def to_csv_record(self):
-    #TODO: Update this function now that the users class is done
-    return f"\"name\', \"followers\", \"following\", \"public_repos\", \"public_gists\", \"contributions\"\n" \
-           f"'{self.name}', '{self.followers}', '{self.following}', '{self.public_repos}', '{self.public_gists}', '{self.contributions}'"
+    import csv
+    import io
+    csv_output = io.StringIO()
+    # Create a CSV writer
+    csv_writer = csv.writer(csv_output, dialect='excel')
+
+    # Write a single row that could be the headers
+    csv_writer.writerow([self.name, self.followers, self.following, self.public_repos, self.public_gists, self.contributions])
+
+    # Get the CSV-formatted string from the virtual file
+    csv_string = csv_output.getvalue().encode('ascii', 'ignore').decode('ascii')
+
+    csv_output.close()
+
+    return csv_string
+
 
   def save_to_csv(self):
       save_as_csv('users.csv', self)
@@ -588,17 +682,15 @@ def get_github_api_request(url,convert_json=True,params=None,time_window_days = 
       
 def save_as_csv(file_name, gitdata_object):
     # Check if the file exists
-    csv_record = gitdata_object.to_csv_record()
     file_exists = os.path.exists(file_name)
-    record_split = csv_record.split("\n")
-    header = record_split[0]
-    data = record_split[1]
+    header = gitdata_object.to_csv_header()
+    data = gitdata_object.to_csv_record()
 
     # Open the file in append mode
-    with open(file_name, 'a') as file:
+    with open(file_name, 'a', newline='') as file:
         # If it's a new file, write the header
         if not file_exists:
-            file.write(header + '\n')
-
-        # Write the CSV record
-        file.write(data + '\n')
+            file.write(header)
+        else:
+            # Write the CSV record
+            file.write(data)
