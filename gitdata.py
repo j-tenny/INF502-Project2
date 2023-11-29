@@ -248,6 +248,67 @@ class Repository:
         repo_csv_path = os.path.join('repos', f'{self.owner_name}-{self.repo_name}.csv')
         save_as_csv(repo_csv_path, self.to_csv_record())
 
+
+    def box_closed_open_commit(self):
+        import pandas as pd
+        import matplotlib.pyplot as plt
+        temp_dict = {'open': [], 'closed': [], 'commit': []}
+        for pull in self.pull_requests:
+            if pull.state == 'open':
+                temp_dict['open'].append(len(pull.created_at))
+                temp_dict['closed'].append(0)
+            elif pull.state == 'closed':
+                temp_dict['closed'].append(len(pull.closed_at))
+                temp_dict['open'].append(0)
+            temp_dict['commit'].append(pull.num_commits)
+        df = pd.DataFrame(temp_dict)
+        plt.boxplot(df[['open', 'closed', 'commit']].dropna())
+        plt.xlabel('Pull Request Status')
+        plt.ylabel('Number of Commits')
+        plt.title('Comparison of Commits in Closed vs Open Pull Requests')
+        plt.xticks([1, 2, 3], ['Open', 'Closed', 'Commit'])
+        plt.ylim(bottom=0)  # Set the minimum y-axis value to 0
+        plt.show()
+        return None
+    
+    def box_addition_deletion(self):
+        import pandas as pd
+        import matplotlib.pyplot as plt
+        temp_dict = {'open': [], 'closed': [], 'addition': [], 'deletion': []}
+        for pull in self.pull_requests:
+            if pull.state == 'open':
+                temp_dict['open'].append(len(pull.created_at))
+                temp_dict['closed'].append(0)
+            elif pull.state == 'closed':
+                temp_dict['closed'].append(len(pull.closed_at))
+                temp_dict['open'].append(0)
+            temp_dict['addition'].append(pull.num_additions)
+            temp_dict['deletion'].append(pull.num_deletions)
+        df = pd.DataFrame(temp_dict)
+        plt.boxplot(df[['open', 'closed', 'addition', 'deletion']].dropna())
+        plt.xlabel('Pull Request Status')
+        plt.ylabel('Number of Additions and deletions')
+        plt.title('Comparison of Number of additions & deletions in Closed vs Open Pull Requests')
+        plt.xticks([1, 2, 3, 4], ['Open', 'Closed', 'Addition', 'Deletion'])
+        plt.show()
+        return None
+    
+    def scatter_addition_deletion(self):
+        import pandas as pd
+        import matplotlib.pyplot as plt
+        temp_dict = {'addition': [], 'deletion': []}
+        for pull in self.pull_requests:
+            temp_dict['addition'].append(pull.num_additions)
+            temp_dict['deletion'].append(pull.num_deletions)
+        df = pd.DataFrame(temp_dict)
+        df = df.dropna()
+        plt.scatter(x = df['addition'], y = df['deletion'])
+        plt.xlabel('additions')
+        plt.ylabel('deletions')
+        plt.title('Relationship between addition and deletion')
+        plt.show()
+        return None
+
     
 class PullRequest:
   def __init__(self,title:str = None, number:int = None, body:str = None, state:str = None, created_at:str = None, closed_at:str = None,
