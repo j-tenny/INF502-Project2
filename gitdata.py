@@ -3,20 +3,31 @@ class AllRepositories:
 
     analysis_number = 0
     
-    def __init__(self, repos,output_filepath=None):
+    def __init__(self, repos,output_filepath=None,time_window_days = None):
         self.repos = repos
         self.start_date = None
         self.end_date = None
         self.output_filepath = output_filepath
+        self.time_window_days = time_window_days
 
         AllRepositories.analysis_number += 1
 
-        self.fill_analysis_dates()
-        self.fill_filepath()
-        self.display_pulls_per_day()
-        self.display_open_vs_closed_per_day()
-        self.display_users_per_repository()
+        if self.count_total_pull_requests() > 0:
+            self.fill_analysis_dates()
+            self.fill_filepath()
+            self.display_pulls_per_day()
+            self.display_open_vs_closed_per_day()
+            self.display_users_per_repository()
+            print('Figures have been saved to: ' + os.path.abspath(self.output_filepath))
+        else:
+            print('No pull requests found in list of repos')
         
+    def count_total_pull_requests(self):
+        count = 0
+        if len(self.repos) > 0:
+            for repo in self.repos:
+                count += len(repo.pull_requests)
+        return count
 
     def fill_filepath(self):
         import os
@@ -36,11 +47,19 @@ class AllRepositories:
         self.output_filepath = outdir
 
     def fill_analysis_dates(self):
-        from datetime import date, timedelta
-
-        # use datetime package to create start and end dates for the last 60 days
-        self.end_date = date.today()
-        self.start_date = self.end_date - timedelta(days=364)
+        from datetime import date, datetime, timedelta
+        if self.time_window_days is not None:
+            # use datetime package to create start and end dates for the last n days
+            self.end_date = date.today()
+            self.start_date = self.end_date - timedelta(days=self.time_window_days)
+        else:
+            dates = list()
+            for repo in self.repos:
+                for pull in repo.pull_requests:
+                    dates.append(pull.created_at)
+            dates.sort()
+            self.start_date = datetime.strptime(dates[0], '%Y-%m-%dT%H:%M:%SZ').date()
+            self.end_date = datetime.strptime(dates[-1], '%Y-%m-%dT%H:%M:%SZ').date()
 
     def display_pulls_per_day(self):
         import pandas as pd
@@ -138,10 +157,12 @@ class GitHubLicense:
 
 
 class Repository:
-    def __init__(self, owner_name, repo_name, token=None):
+    def __init__(self, owner_name, repo_name,time_window_days=365, verbose=True, token=None):
         # Assign properties
         self.owner_name = owner_name
         self.repo_name = repo_name
+        self.time_window_days = time_window_days
+        self.verbose = verbose
         self.__token = token
 
         # Initialize empty variables for pull request data and contributing user data
@@ -154,25 +175,37 @@ class Repository:
 
     def get_pulls_as_json(self):
         # GitHub API endpoint for pull requests
-        url = f"https://api.github.com/repos/{self.owner_name}/{self.repo_name}/pulls?state=all"
+        url = f"https://api.github.com/repos/{self.owner_name}/{self.repo_name}/pulls"
 
-        pull_requests_json = get_github_api_request(url = url,convert_json=True,token=self.__token)
+        pull_requests_json = get_github_api_request(url = url,params={'state':'all','per_page':'100'},time_window_days=self.time_window_days,token=self.__token)
 
         return pull_requests_json
 
     def get_pulls(self):
         # Get pull requests from github in json format
         pulls_json = self.get_pulls_as_json()
+        if self.verbose:
+            print(f'Found {len(pulls_json)} pull requests in this time window. Downloading detailed data...')
 
         # Temporarily create an empty list
         pull_requests_list = list()
 
         # Convert each pull request in the json to a PullRequest object and add it
         # to the list of pull requests stored in this Repository object
+        finished = 0
+        total = len(pulls_json)
+        tics = list(range(0,100,10))
         for json_record in pulls_json:
+            if self.verbose:
+                progress = int(((finished*.7)/total) * 100) # Testing showed that downloading pull request data takes ~70% of time, downloading user data takes ~30% of the total time
+                if progress >= tics[0]:
+                    progress = tics.pop(0)
+                    print('[' + '#' * (progress // 5) + '-' * ((100-progress)//5) + '] ' + str(progress) + '%')
+
             pull_request_instance = PullRequest(token=self.__token)
             pull_request_instance.fill_from_json(json_record)
             pull_requests_list.append(pull_request_instance)
+            finished += 1
 
         # Convert list to tuple so it's safer from accidental changes
         self.pull_requests = tuple(pull_requests_list)
@@ -203,7 +236,17 @@ class Repository:
         user_names = list()
         
         #iterate across pull requests
+        finished = 0
+        start = len(self.pull_requests) * .7
+        total = len(self.pull_requests)
+        tics = list(range(70, 120, 10))
         for pull in self.pull_requests:
+            if self.verbose:
+                progress = int(((start + finished*.3)/total) * 100)
+                if progress >= tics[0]:
+                    progress = tics.pop(0)
+                    print('[' + '#' * (progress // 5) + '-' * ((100-progress)//5) + '] ' + str(progress) + '%')
+
             #check if name in user list
 
             if pull.user not in user_names:
@@ -222,9 +265,15 @@ class Repository:
                 existing_user_index = user_names.index(pull.user)
                 user_list[existing_user_index].contributions += 1
 
+            finished += 1
+
         # Convert list to tuple so it's safer from accidental changes
         self.users = tuple(user_list)
 
+        if self.verbose:
+            if 100 in tics:
+                progress = 100
+                print('[' + '#' * (progress // 5) + '-' * ((100-progress)//5) + '] ' + str(progress) + '%')
     def users_to_json(self):
         output_list = list()
         for user in self.users:
@@ -246,17 +295,21 @@ class Repository:
 
     def user_correlations(self):
         import pandas as pd
-        #convert user data to a dataframe
-        df = self.users_to_pandas()
-        
-        #grab the four metrics we need to run pairwise correlation
-        corr_subset = df[['followers','following','public_repos','contributions']]
-        
-        #calculate pairwise correlations between fields
-        correlations = corr_subset.corr()
+        if len(self.users) > 0:
+            #convert user data to a dataframe
+            df = self.users_to_pandas()
+
+            #grab the four metrics we need to run pairwise correlation
+            corr_subset = df[['followers','following','public_repos','contributions']]
+
+            #calculate pairwise correlations between fields
+            correlations = corr_subset.corr()
+        else:
+            print("No users were found in this repository's pull requests")
+            correlations = None
 
         #display results
-        print(correlations)
+        return correlations
     
     def total_pulls_closed(self):
         pull_closed_total = 0
@@ -278,7 +331,7 @@ class Repository:
             #if pull.state == 'open':
             dates.append(pull.created_at)
         dates.sort()
-        if len(dates) >= 0:
+        if len(dates) > 0:
             oldest_date = dates[0]
         else:
             oldest_date = 'NA'
@@ -388,10 +441,10 @@ class PullRequest:
     self.created_at = json['created_at']
     self.closed_at = json['closed_at']
     self.user = json['user']['login']
+    self.url = json['url'] # Don't need to output
     self.commits_url = json['commits_url'] # Don't need to output
     self.diff_url = json['diff_url'] # Don't need to output
 
-    self.get_num_commits()
     self.get_diff_metrics()
 
   def to_dict(self):
@@ -408,40 +461,15 @@ class PullRequest:
             'num_changed_files':self.num_changed_files,
             }
 
-  def get_num_commits(self):
-    commits_json = get_github_api_request(url=self.commits_url,convert_json=True,token=self.__token)
-
-    self.num_commits = len(commits_json)
 
   def get_diff_metrics(self):
     # Download diff data from API
-    diff_text = get_github_api_request(url = self.diff_url,convert_json=False,token=self.__token)
+    pull_json = get_github_api_request(self.url,token=self.__token)
 
-    additions = 0
-    deletions = 0
-    changed_files = 0
-
-    # Count number of lines that start with "diff", "+" or "-"
-    for line in diff_text.split('\n'):
-        if len(line) > 0:
-            if line[0] == '+':
-                if line[0:3] == '+++':
-                    pass
-                else:
-                    additions += 1
-            elif line[0] == '-':
-                if line[0:3] == '---':
-                    pass
-                else:
-                    deletions += 1
-            elif line[0] == 'd':
-                if line[0:4] == 'diff':
-                    changed_files += 1
-
-    self.num_additions = additions
-    self.num_deletions = deletions
-    self.num_changed_files = changed_files
-
+    self.num_additions = pull_json['additions']
+    self.num_deletions = pull_json['deletions']
+    self.num_changed_files = pull_json['changed_files']
+    self.num_commits = pull_json['commits']
 
   def __str__(self):
     return f'Pull Request #{self.number}: {self.title}'
@@ -490,40 +518,69 @@ class User:
       save_as_csv('users.csv', self)
       
       
-def get_github_api_request(url,convert_json=True, token=None):
+def get_github_api_request(url,convert_json=True,params=None,time_window_days = None, token=None):
     import requests
+    if time_window_days is not None:
+        import datetime
+        cutoff_date = datetime.datetime.now() - datetime.timedelta(days=time_window_days)
 
-    if token is None:
-        # Make a GET request to retrieve pull requests
-        response = requests.get(url)
+    if convert_json:
+        results = list()
     else:
-        # Headers including the Authorization token
-        headers = {"Authorization": f"token {token}"}
+        results = str()
+    another_page = True
 
-        # Make a GET request to retrieve pull requests
-        response = requests.get(url, headers=headers)
-
-    # Check if the request was successful (status code 200)
-    if response.status_code == 200:
-        # Parse the JSON response
-        if convert_json:
-            return response.json()
+    while another_page:
+        if token is None:
+            # Make a GET request to retrieve pull requests
+            response = requests.get(url)
         else:
-            return response.text
-    elif response.status_code == 401:
-        raise PermissionError('Server Error 401: Access to Github API denied. You may be using an expired access token.'
-                              'Create new token at https://github.com/settings/tokens?type=beta. Read more: \n\n'+response.text)
-    elif response.status_code == 403:
-        raise PermissionError('Server Error 403: Access to Github API denied. Consider creating and using an'
-                              ' authentication token https://github.com/settings/tokens?type=beta. Read more: \n\n'+response.text)
-    elif response.status_code == 404:
-        raise ValueError('Error 404: No data found at this URL')
-    else:
-        raise ConnectionError(f"Failed to access Github API. Status code: {response.status_code} \n\n"+response.text)
+            # Headers including the Authorization token
+            headers = {"Authorization": f"token {token}"}
+
+            # Make a GET request to retrieve pull requests
+            response = requests.get(url, headers=headers, params=params)
 
 
+        # Check if the request was successful (status code 200)
+        if response.status_code == 200:
+            if convert_json:
+                if type(response.json()) is list:
+                    results.extend(response.json())
+                else:
+                    results = response.json()
+            else:
+                results = results + response.text
+
+        elif response.status_code == 401:
+            raise PermissionError('Server Error 401: Access to Github API denied. You may be using an expired access token.'
+                                  'Create new token at https://github.com/settings/tokens?type=beta. Read more: \n\n'+response.text)
+        elif response.status_code == 403:
+            raise PermissionError('Server Error 403: Access to Github API denied. Consider creating and using an'
+                                  ' authentication token https://github.com/settings/tokens?type=beta. Read more: \n\n'+response.text)
+        elif response.status_code == 404:
+            raise ValueError('Error 404: No data found at this URL')
+
+        else:
+            raise ConnectionError(f"Failed to access Github API. Status code: {response.status_code} \n\n"+response.text)
 
 
+        if 'next' in response.links:  # check if there is another page of results
+            if time_window_days is not None:
+                last_date_downloaded = datetime.datetime.strptime(results[-1]['created_at'], '%Y-%m-%dT%H:%M:%SZ')
+                if last_date_downloaded <= cutoff_date:
+                    another_page = False
+                    # Filter by date
+                    results = [record for record in results if datetime.datetime.strptime(record['created_at'], '%Y-%m-%dT%H:%M:%SZ') >= cutoff_date]
+
+            url = response.links['next']['url']
+            if type(results) is not list:
+                raise ValueError("Can't resolve multi-page dictionary response")
+        else:
+            another_page = False
+
+
+    return results
       
 def save_as_csv(file_name, gitdata_object):
     # Check if the file exists
