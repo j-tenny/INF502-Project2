@@ -252,21 +252,19 @@ class Repository:
     def box_closed_open_commit(self):
         import pandas as pd
         import matplotlib.pyplot as plt
-        temp_dict = {'open': [], 'closed': [], 'commit': []}
+        open_commits = []
+        closed_commits = []
         for pull in self.pull_requests:
             if pull.state == 'open':
-                temp_dict['open'].append(len(pull.created_at))
-                temp_dict['closed'].append(0)
+                open_commits.append(pull.num_commits)
             elif pull.state == 'closed':
-                temp_dict['closed'].append(len(pull.closed_at))
-                temp_dict['open'].append(0)
-            temp_dict['commit'].append(pull.num_commits)
-        df = pd.DataFrame(temp_dict)
-        plt.boxplot(df[['open', 'closed', 'commit']].dropna())
+                closed_commits.append(pull.num_commits)
+        data = [open_commits, closed_commits]
+        plt.boxplot(data)
         plt.xlabel('Pull Request Status')
         plt.ylabel('Number of Commits')
-        plt.title('Comparison of Commits in Closed vs Open Pull Requests')
-        plt.xticks([1, 2, 3], ['Open', 'Closed', 'Commit'])
+        plt.title('Comparison of Commits in Open vs Closed Pull Requests')
+        plt.xticks([1, 2], ['Open', 'Closed'])
         plt.ylim(bottom=0)  # Set the minimum y-axis value to 0
         plt.show()
         return None
@@ -274,22 +272,22 @@ class Repository:
     def box_addition_deletion(self):
         import pandas as pd
         import matplotlib.pyplot as plt
-        temp_dict = {'open': [], 'closed': [], 'addition': [], 'deletion': []}
+        open_additions = []
+        open_deletions = []
+        closed_additions = []
+        closed_deletions = []  
         for pull in self.pull_requests:
             if pull.state == 'open':
-                temp_dict['open'].append(len(pull.created_at))
-                temp_dict['closed'].append(0)
+                open_additions.append(pull.num_additions)
+                open_deletions.append(pull.num_deletions)
             elif pull.state == 'closed':
-                temp_dict['closed'].append(len(pull.closed_at))
-                temp_dict['open'].append(0)
-            temp_dict['addition'].append(pull.num_additions)
-            temp_dict['deletion'].append(pull.num_deletions)
-        df = pd.DataFrame(temp_dict)
-        plt.boxplot(df[['open', 'closed', 'addition', 'deletion']].dropna())
+                closed_additions.append(pull.num_additions)
+                closed_deletions.append(pull.num_deletions)
+        data = [open_additions, open_deletions, closed_additions, closed_deletions]
+        plt.boxplot(data, labels=['Open Additions', 'Open Deletions', 'Closed Additions', 'Closed Deletions'])
         plt.xlabel('Pull Request Status')
-        plt.ylabel('Number of Additions and deletions')
-        plt.title('Comparison of Number of additions & deletions in Closed vs Open Pull Requests')
-        plt.xticks([1, 2, 3, 4], ['Open', 'Closed', 'Addition', 'Deletion'])
+        plt.ylabel('Number of Additions and Deletions')
+        plt.title('Comparison of Additions and Deletions in Open vs Closed Pull Requests')
         plt.show()
         return None
     
