@@ -448,6 +448,33 @@ class Repository:
         plt.show()
         return None
 
+    def pull_request_correlations(self):
+        import pandas as pd
+        
+        #convert user data to a dataframe
+        df = self.pull_requests_to_pandas()
+
+        #grab the four pull request fields we need to run pairwise correlation
+        corr_subset = df[['num_commits','num_additions','num_deletions','num_changed_files']]
+
+        #calculate pairwise correlations between fields
+        correlations = corr_subset.corr()
+
+    def file_changes_per_user(self):
+        import pandas as pd
+        import matplotlib.pyplot as plt
+        #convert user data to a dataframe
+        df = self.pull_requests_to_pandas()
+
+        #create a subset dataframe with the two fields we need
+        subset = df[['user','num_changed_files']]
+        subset = subset.groupby(['user']).sum()
+
+        #create a barplot with the 
+        correlations = subset.plot.box()
+        correlations.show()
+        
+
     
 class PullRequest:
   def __init__(self,title:str = None, number:int = None, body:str = None, state:str = None, created_at:str = None, closed_at:str = None,
