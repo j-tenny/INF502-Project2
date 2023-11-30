@@ -381,7 +381,7 @@ class Repository:
 
     def save_to_csv(self):
         # Save to repositories.csv
-        save_as_csv('repositories.csv', self.to_csv_record())
+        save_as_csv('repositories.csv', self)
 
         # Save to repos/owner-repo.csv
         repo_csv_path = os.path.join('repos', f'{self.owner_name}-{self.repo_name}.csv')
@@ -550,7 +550,7 @@ class PullRequest:
   def save_to_csv(self, owner_name, repo_name):
       # Save to repos/owner-repo.csv
       repo_csv_path = os.path.join('repos', f'{owner_name}-{repo_name}.csv')
-      save_as_csv(repo_csv_path, self.to_csv_record())
+      save_as_csv(repo_csv_path, self)
       
 class User:
   def __init__(self, name, followers:str = None, following:int = None, public_repos:str = None, public_gists:str = None, token=None):
