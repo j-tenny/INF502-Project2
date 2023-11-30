@@ -449,31 +449,35 @@ class Repository:
         return None
 
     def pull_request_correlations(self):
-        import pandas as pd
-        
-        #convert user data to a dataframe
-        df = self.pull_requests_to_pandas()
+        if len(self.pull_requests) > 0:
+            #convert user data to a dataframe
+            df = self.pull_requests_to_pandas()
 
-        #grab the four pull request fields we need to run pairwise correlation
-        corr_subset = df[['num_commits','num_additions','num_deletions','num_changed_files']]
+            #grab the four pull request fields we need to run pairwise correlation
+            corr_subset = df[['num_commits','num_additions','num_deletions','num_changed_files']]
 
-        #calculate pairwise correlations between fields
-        correlations = corr_subset.corr()
+            #calculate pairwise correlations between fields
+            correlations = corr_subset.corr()
+        else:
+            print('No pull requests found')
+            correlations = None
+
+        return correlations
 
     def file_changes_per_user(self):
-        import pandas as pd
-        import matplotlib.pyplot as plt
-        #convert user data to a dataframe
-        df = self.pull_requests_to_pandas()
+        if len(self.pull_requests)>0:
+            #convert user data to a dataframe
+            df = self.pull_requests_to_pandas()
 
-        #create a subset dataframe with the two fields we need
-        subset = df[['user','num_changed_files']]
-        subset = subset.groupby(['user']).sum()
+            #create a subset dataframe with the two fields we need
+            subset = df[['user','num_changed_files']]
+            subset = subset.groupby(['user']).sum()
 
-        #create a barplot with the 
-        correlations = subset.plot.box()
-        correlations.show()
-        
+            #create a barplot with the
+            correlations = subset.plot.box()
+            correlations.show()
+        else:
+            print('No pull requests found')
 
     
 class PullRequest:

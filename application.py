@@ -352,9 +352,11 @@ class RepoAnalysisMenu:
             print('Number of closed pull requests:'.rjust(44), repo.total_pulls_closed())
             print('Number of open pull requests:'.rjust(44), repo.total_pulls_open())
             print('Date opened for oldest pull request:'.rjust(44), repo.oldest())
+            print(repo.pull_request_correlations())
             repo.box_closed_open_commit()
             repo.box_addition_deletion()
             repo.scatter_addition_deletion()
+            repo.file_changes_per_user()
 
             self.display()
 
