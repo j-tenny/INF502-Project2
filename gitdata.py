@@ -6,7 +6,7 @@ import pandas
 class AllRepositories:
 
     analysis_number = 0
-    
+
     def __init__(self, repos,output_filepath=None,time_window_days = None):
         self.repos = repos
         self.start_date = None
@@ -25,7 +25,7 @@ class AllRepositories:
             print('Figures have been saved to: ' + os.path.abspath(self.output_filepath))
         else:
             print('No pull requests found in list of repos')
-        
+
     def count_total_pull_requests(self):
         count = 0
         if len(self.repos) > 0:
@@ -44,10 +44,10 @@ class AllRepositories:
             outdir = f"all_repos_analysis_{AllRepositories.analysis_number}/"
         else:
             outdir = self.output_filepath + '/' + f"all_repos_analysis_{AllRepositories.analysis_number}/"
-        
+
         if not os.path.exists(outdir):
             os.mkdir(outdir)
-            
+
         self.output_filepath = outdir
 
     def fill_analysis_dates(self):
@@ -140,7 +140,7 @@ class AllRepositories:
             temp_dict['users'] = len(repo.users)
             repo_users.append(temp_dict)
             
-        #create dataframe from list of dicts, display, and save fig  
+        #create dataframe from list of dicts, display, and save fig
         df = pd.DataFrame(repo_users)
         ax = df.plot.bar(x='repo_name', y='users', rot=0)
         #print(ax)
@@ -334,7 +334,7 @@ class Repository:
 
         #display results
         return correlations
-    
+
     def total_pulls_closed(self):
         pull_closed_total = 0
         for pull in self.pull_requests:
@@ -412,21 +412,19 @@ class Repository:
         import pandas as pd
         import matplotlib.pyplot as plt
         if len(self.pull_requests) > 0:
-            temp_dict = {'open': [], 'closed': [], 'commit': []}
+            open_commits = []
+            closed_commits = []
             for pull in self.pull_requests:
                 if pull.state == 'open':
-                    temp_dict['open'].append(len(pull.created_at))
-                    temp_dict['closed'].append(0)
+                    open_commits.append(pull.num_commits)
                 elif pull.state == 'closed':
-                    temp_dict['closed'].append(len(pull.closed_at))
-                    temp_dict['open'].append(0)
-                temp_dict['commit'].append(pull.num_commits)
-            df = pd.DataFrame(temp_dict)
-            plt.boxplot(df[['open', 'closed', 'commit']].dropna())
+                    closed_commits.append(pull.num_commits)
+            data = [open_commits, closed_commits]
+            plt.boxplot(data)
             plt.xlabel('Pull Request Status')
             plt.ylabel('Number of Commits')
-            plt.title('Comparison of Commits in Closed vs Open Pull Requests')
-            plt.xticks([1, 2, 3], ['Open', 'Closed', 'Commit'])
+            plt.title('Comparison of Commits in Open vs Closed Pull Requests')
+            plt.xticks([1, 2], ['Open', 'Closed'])
             plt.ylim(bottom=0)  # Set the minimum y-axis value to 0
             plt.savefig(self.output_filepath + 'box_closed_open_commit.png')
         else:
@@ -436,22 +434,22 @@ class Repository:
         import pandas as pd
         import matplotlib.pyplot as plt
         if len(self.pull_requests) > 0:
-            temp_dict = {'open': [], 'closed': [], 'addition': [], 'deletion': []}
+            open_additions = []
+            open_deletions = []
+            closed_additions = []
+            closed_deletions = []
             for pull in self.pull_requests:
                 if pull.state == 'open':
-                    temp_dict['open'].append(len(pull.created_at))
-                    temp_dict['closed'].append(0)
+                    open_additions.append(pull.num_additions)
+                    open_deletions.append(pull.num_deletions)
                 elif pull.state == 'closed':
-                    temp_dict['closed'].append(len(pull.closed_at))
-                    temp_dict['open'].append(0)
-                temp_dict['addition'].append(pull.num_additions)
-                temp_dict['deletion'].append(pull.num_deletions)
-            df = pd.DataFrame(temp_dict)
-            plt.boxplot(df[['open', 'closed', 'addition', 'deletion']].dropna())
+                    closed_additions.append(pull.num_additions)
+                    closed_deletions.append(pull.num_deletions)
+            data = [open_additions, open_deletions, closed_additions, closed_deletions]
+            plt.boxplot(data, labels=['Open Additions', 'Open Deletions', 'Closed Additions', 'Closed Deletions'])
             plt.xlabel('Pull Request Status')
-            plt.ylabel('Number of Additions and deletions')
-            plt.title('Comparison of Number of additions & deletions in Closed vs Open Pull Requests')
-            plt.xticks([1, 2, 3, 4], ['Open', 'Closed', 'Addition', 'Deletion'])
+            plt.ylabel('Number of Additions and Deletions')
+            plt.title('Comparison of Additions and Deletions in Open vs Closed Pull Requests')
             plt.savefig(self.output_filepath + 'box_addition_deletion.png')
         else:
             print('No pull requests found')
@@ -608,7 +606,7 @@ class PullRequest:
       # Save to repos/owner-repo.csv
       repo_csv_path = os.path.join('repos', f'{owner_name}-{repo_name}.csv')
       save_as_csv(repo_csv_path, self)
-      
+
 class User:
   def __init__(self, name, followers:str = None, following:int = None, public_repos:str = None, public_gists:str = None, token=None):
       
@@ -736,7 +734,7 @@ def get_github_api_request(url,convert_json=True,params=None,time_window_days = 
 
 
     return results
-      
+
 def save_as_csv(file_name, gitdata_object):
     # Check if the file exists
     file_exists = os.path.exists(file_name)
