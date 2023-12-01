@@ -75,7 +75,7 @@ class AllRepositories:
         df = pd.concat(dfs)
         
         #this will remove the hours, minutes and seconds data from the created_at field and leave us with just the date
-        df['created_at'] = df.created_at.astype('datetime64[ns]').dt.floor('d')
+        df['created_at'] = pd.to_datetime(df['created_at'].str.split('T').str[0])
 
         try:
             #create dataframe of last 60 days
@@ -86,8 +86,8 @@ class AllRepositories:
             ax = analysis_days.plot.line(x='date', y='tally')
             #display and save fig
             #print(ax)
-            ax.figure.savefig(self.output_filepath + 'pulls_per_day.png')
-            del(ax)
+            ax.figure.savefig(self.output_filepath + 'pulls_per_day.png', bbox_inches='tight')
+
 
         except Exception as e:
             #this is just for troubleshooting our code and testing, we shouldn't need it once we have this perfected
@@ -107,8 +107,8 @@ class AllRepositories:
         df = pd.concat(dfs)
 
         #this will remove the hours, minutes and seconds data from the created_at and closed_at fields so we only have the date
-        df['created_at'] = df.created_at.astype('datetime64[ns]').dt.floor('d')
-        df['closed_at'] = df.closed_at.astype('datetime64[ns]').dt.floor('d')
+        df['created_at'] = pd.to_datetime(df['created_at'].str.split('T').str[0])
+        df['closed_at'] = pd.to_datetime(df['closed_at'].str.split('T').str[0])
 
         try:
             #create dataframe of last 60 days
@@ -120,8 +120,9 @@ class AllRepositories:
             ax = analysis_days.plot.line(x='date')
             #display and save fig
             #print(ax)
-            ax.figure.savefig(self.output_filepath + 'open_vs_closed_per_day.png')
-            del(ax)
+
+            ax.figure.savefig(self.output_filepath + 'open_vs_closed_per_day.png', bbox_inches='tight')
+
 
         except Exception as e:
             #this is just for troubleshooting our code and testing, we shouldn't need it once we have this perfected
@@ -146,8 +147,9 @@ class AllRepositories:
         df = pd.DataFrame(repo_users)
         ax = df.plot.bar(x='repo_name', y='users', rot=0)
         #print(ax)
-        ax.figure.savefig(self.output_filepath + 'users_per_repository.png')
-        del(ax)
+
+        ax.figure.savefig(self.output_filepath + 'users_per_repository.png', bbox_inches='tight')
+
         return None
 
 
@@ -413,48 +415,30 @@ class Repository:
 
     def box_closed_open_commit(self):
         import pandas as pd
-        import matplotlib.pyplot as plt
         if len(self.pull_requests) > 0:
-            open_commits = []
-            closed_commits = []
+            temp_dict = {'commit': [], 'state': []}
             for pull in self.pull_requests:
-                if pull.state == 'open':
-                    open_commits.append(pull.num_commits)
-                elif pull.state == 'closed':
-                    closed_commits.append(pull.num_commits)
-            data = [open_commits, closed_commits]
-            plt.boxplot(data, labels=['Open', 'Closed'],showfliers=False)
-            plt.xlabel('Pull Request Status')
-            plt.ylabel('Number of Commits')
-            plt.title('Comparison of Commits in Open vs Closed Pull Requests')
-            plt.ylim(bottom=0)  # Set the minimum y-axis value to 0
-            plt.savefig(self.output_filepath + 'box_closed_open_commit.png')
-            plt.close()
+                temp_dict['state'].append(pull.state)
+                temp_dict['commit'].append(pull.num_commits)
+            df = pd.DataFrame(temp_dict).dropna()
+            ax = df.plot.box(by="state", return_type='axes',showfliers=False)
+            ax['commit'].figure.savefig(self.output_filepath + 'box_closed_open_commit.png', bbox_inches='tight')
+
         else:
             print('No pull requests found')
     
     def box_addition_deletion(self):
         import pandas as pd
-        import matplotlib.pyplot as plt
         if len(self.pull_requests) > 0:
-            open_additions = []
-            open_deletions = []
-            closed_additions = []
-            closed_deletions = []
+            temp_dict = {'addition': [], 'deletion': [], 'state': []}
             for pull in self.pull_requests:
-                if pull.state == 'open':
-                    open_additions.append(pull.num_additions)
-                    open_deletions.append(pull.num_deletions)
-                elif pull.state == 'closed':
-                    closed_additions.append(pull.num_additions)
-                    closed_deletions.append(pull.num_deletions)
-            data = [open_additions, open_deletions, closed_additions, closed_deletions]
-            plt.boxplot(data, labels=['Open Additions', 'Open Deletions', 'Closed Additions', 'Closed Deletions'],showfliers=False)
-            plt.xlabel('Pull Request Status')
-            plt.ylabel('Number of Additions and Deletions')
-            plt.title('Comparison of Additions and Deletions in Open vs Closed Pull Requests')
-            plt.savefig(self.output_filepath + 'box_addition_deletion.png')
-            plt.close()
+                temp_dict['state'].append(pull.state)
+                temp_dict['addition'].append(pull.num_additions)
+                temp_dict['deletion'].append(pull.num_deletions)
+            df = pd.DataFrame(temp_dict).dropna()
+            ax = df.plot.box(by="state", return_type='axes',showfliers=False)
+            ax['addition'].figure.savefig(self.output_filepath + 'box_addition_deletion.png', bbox_inches='tight')
+
         else:
             print('No pull requests found')
     
@@ -472,13 +456,10 @@ class Repository:
             deletions_extreme_threshold = df['deletion'].mean() + df['deletion'].std() * 3
             df = df[df['addition'] <= additions_extreme_threshold]
             df = df[df['deletion'] <= deletions_extreme_threshold]
-            #df = df.dropna()
-            plt.scatter(x = df['addition'], y = df['deletion'])
-            plt.xlabel('additions')
-            plt.ylabel('deletions')
-            plt.title('Relationship between addition and deletion')
-            plt.savefig(self.output_filepath + 'scatter_addition_deletion.png')
-            plt.close()
+            df = df.dropna()
+            scatterplot = df.plot.scatter(x='addition', y='deletion')
+            scatterplot.figure.savefig(self.output_filepath + 'scatter_addition_deletion.png', bbox_inches='tight')
+
         else:
             print('No pull requests found')
 
@@ -505,13 +486,12 @@ class Repository:
 
             #create a subset dataframe with the two fields we need
             subset = df[['user','num_changed_files']]
-            subset = subset.groupby(['user']).sum()
+            #subset = subset.groupby(['user']).sum()
 
             #create a barplot with the
-            correlations = df.boxplot(column='num_changed_files',by='user',showfliers=False)
-            #correlations = subset.plot.box()
-            correlations.figure.savefig(self.output_filepath + 'file_changes_per_user.png')
-            del(correlations)
+            correlations = subset.plot.box(by='user',showfliers=False,return_type='axes')
+            correlations['num_changed_files'].figure.savefig(self.output_filepath + 'file_changes_per_user.png', bbox_inches='tight')
+
         else:
             print('No pull requests found')
 
