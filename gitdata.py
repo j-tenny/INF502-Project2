@@ -416,7 +416,7 @@ class Repository:
                 temp_dict['state'].append(pull.state)
                 temp_dict['commit'].append(pull.num_commits)
             df = pd.DataFrame(temp_dict).dropna()
-            ax = df.plot.box(by="state", return_type='axes')
+            ax = df.plot.box(by="state", return_type='axes',showfliers=False)
             ax['commit'].figure.savefig(self.output_filepath + 'box_closed_open_commit.png', bbox_inches='tight')
         else:
             print('No pull requests found')
@@ -430,7 +430,7 @@ class Repository:
                 temp_dict['addition'].append(pull.num_additions)
                 temp_dict['deletion'].append(pull.num_deletions)
             df = pd.DataFrame(temp_dict).dropna()
-            ax = df.plot.box(by="state", return_type='axes')
+            ax = df.plot.box(by="state", return_type='axes',showfliers=False)
             ax['addition'].figure.savefig(self.output_filepath + 'box_addition_deletion.png', bbox_inches='tight')
         else:
             print('No pull requests found')
@@ -478,11 +478,11 @@ class Repository:
 
             #create a subset dataframe with the two fields we need
             subset = df[['user','num_changed_files']]
-            subset = subset.groupby(['user']).sum()
+            #subset = subset.groupby(['user']).sum()
 
             #create a barplot with the
-            correlations = subset.plot.box(by='user')
-            correlations.figure.savefig(self.output_filepath + 'file_changes_per_user.png', bbox_inches='tight')
+            correlations = subset.plot.box(by='user',showfliers=False,return_type='axes')
+            correlations['num_changed_files'].figure.savefig(self.output_filepath + 'file_changes_per_user.png', bbox_inches='tight')
         else:
             print('No pull requests found')
 
