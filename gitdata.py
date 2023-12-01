@@ -161,13 +161,14 @@ class GitHubLicense:
 
 
 class Repository:
-    def __init__(self, owner_name, repo_name,time_window_days=365, verbose=True, token=None):
+    def __init__(self, owner_name, repo_name,time_window_days=365, verbose=True, token=None, outupt_filepath=None):
         # Assign properties
         self.owner_name = owner_name
         self.repo_name = repo_name
         self.time_window_days = time_window_days
         self.verbose = verbose
         self.__token = token
+        self.output_filepath = output_filepath
 
         # Initialize empty variables for pull request data and contributing user data
         self.pull_requests = tuple()
@@ -176,6 +177,25 @@ class Repository:
         # Automatically run function to get pull requests and users
         self.get_pulls()
         self.get_users()
+
+        self.fill_filepath()
+
+    def fill_filepath(self):
+        import os
+
+        if self.output_filepath is not None:
+            if not os.path.exists(self.output_filepath):
+                os.mkdir(self.output_filepath)
+
+        if self.output_filepath is None:
+            outdir = f"repo_summary_{self.repo_name}/"
+        else:
+            outdir = self.output_filepath + '/' + f"repo_summary_{self.repo_name}/"
+
+        if not os.path.exists(outdir):
+            os.mkdir(outdir)
+
+        self.output_filepath = outdir
 
     def get_pulls_as_json(self):
         # GitHub API endpoint for pull requests
@@ -391,62 +411,68 @@ class Repository:
     def box_closed_open_commit(self):
         import pandas as pd
         import matplotlib.pyplot as plt
-        temp_dict = {'open': [], 'closed': [], 'commit': []}
-        for pull in self.pull_requests:
-            if pull.state == 'open':
-                temp_dict['open'].append(len(pull.created_at))
-                temp_dict['closed'].append(0)
-            elif pull.state == 'closed':
-                temp_dict['closed'].append(len(pull.closed_at))
-                temp_dict['open'].append(0)
-            temp_dict['commit'].append(pull.num_commits)
-        df = pd.DataFrame(temp_dict)
-        plt.boxplot(df[['open', 'closed', 'commit']].dropna())
-        plt.xlabel('Pull Request Status')
-        plt.ylabel('Number of Commits')
-        plt.title('Comparison of Commits in Closed vs Open Pull Requests')
-        plt.xticks([1, 2, 3], ['Open', 'Closed', 'Commit'])
-        plt.ylim(bottom=0)  # Set the minimum y-axis value to 0
-        plt.show()
-        return None
+        if len(self.pull_requests) > 0:
+            temp_dict = {'open': [], 'closed': [], 'commit': []}
+            for pull in self.pull_requests:
+                if pull.state == 'open':
+                    temp_dict['open'].append(len(pull.created_at))
+                    temp_dict['closed'].append(0)
+                elif pull.state == 'closed':
+                    temp_dict['closed'].append(len(pull.closed_at))
+                    temp_dict['open'].append(0)
+                temp_dict['commit'].append(pull.num_commits)
+            df = pd.DataFrame(temp_dict)
+            plt.boxplot(df[['open', 'closed', 'commit']].dropna())
+            plt.xlabel('Pull Request Status')
+            plt.ylabel('Number of Commits')
+            plt.title('Comparison of Commits in Closed vs Open Pull Requests')
+            plt.xticks([1, 2, 3], ['Open', 'Closed', 'Commit'])
+            plt.ylim(bottom=0)  # Set the minimum y-axis value to 0
+            plt.savefig(self.output_filepath + 'box_closed_open_commit.png')
+        else:
+            print('No pull requests found')
     
     def box_addition_deletion(self):
         import pandas as pd
         import matplotlib.pyplot as plt
-        temp_dict = {'open': [], 'closed': [], 'addition': [], 'deletion': []}
-        for pull in self.pull_requests:
-            if pull.state == 'open':
-                temp_dict['open'].append(len(pull.created_at))
-                temp_dict['closed'].append(0)
-            elif pull.state == 'closed':
-                temp_dict['closed'].append(len(pull.closed_at))
-                temp_dict['open'].append(0)
-            temp_dict['addition'].append(pull.num_additions)
-            temp_dict['deletion'].append(pull.num_deletions)
-        df = pd.DataFrame(temp_dict)
-        plt.boxplot(df[['open', 'closed', 'addition', 'deletion']].dropna())
-        plt.xlabel('Pull Request Status')
-        plt.ylabel('Number of Additions and deletions')
-        plt.title('Comparison of Number of additions & deletions in Closed vs Open Pull Requests')
-        plt.xticks([1, 2, 3, 4], ['Open', 'Closed', 'Addition', 'Deletion'])
-        plt.show()
-        return None
+        if len(self.pull_requests) > 0:
+            temp_dict = {'open': [], 'closed': [], 'addition': [], 'deletion': []}
+            for pull in self.pull_requests:
+                if pull.state == 'open':
+                    temp_dict['open'].append(len(pull.created_at))
+                    temp_dict['closed'].append(0)
+                elif pull.state == 'closed':
+                    temp_dict['closed'].append(len(pull.closed_at))
+                    temp_dict['open'].append(0)
+                temp_dict['addition'].append(pull.num_additions)
+                temp_dict['deletion'].append(pull.num_deletions)
+            df = pd.DataFrame(temp_dict)
+            plt.boxplot(df[['open', 'closed', 'addition', 'deletion']].dropna())
+            plt.xlabel('Pull Request Status')
+            plt.ylabel('Number of Additions and deletions')
+            plt.title('Comparison of Number of additions & deletions in Closed vs Open Pull Requests')
+            plt.xticks([1, 2, 3, 4], ['Open', 'Closed', 'Addition', 'Deletion'])
+            plt.savefig(self.output_filepath + 'box_addition_deletion.png')
+        else:
+            print('No pull requests found')
     
     def scatter_addition_deletion(self):
         import pandas as pd
         import matplotlib.pyplot as plt
-        temp_dict = {'addition': [], 'deletion': []}
-        for pull in self.pull_requests:
-            temp_dict['addition'].append(pull.num_additions)
-            temp_dict['deletion'].append(pull.num_deletions)
-        df = pd.DataFrame(temp_dict)
-        df = df.dropna()
-        plt.scatter(x = df['addition'], y = df['deletion'])
-        plt.xlabel('additions')
-        plt.ylabel('deletions')
-        plt.title('Relationship between addition and deletion')
-        plt.show()
-        return None
+        if len(self.pull_requests) > 0:
+            temp_dict = {'addition': [], 'deletion': []}
+            for pull in self.pull_requests:
+                temp_dict['addition'].append(pull.num_additions)
+                temp_dict['deletion'].append(pull.num_deletions)
+            df = pd.DataFrame(temp_dict)
+            df = df.dropna()
+            plt.scatter(x = df['addition'], y = df['deletion'])
+            plt.xlabel('additions')
+            plt.ylabel('deletions')
+            plt.title('Relationship between addition and deletion')
+            plt.savefig(self.output_filepath + 'scatter_addition_deletion.png')
+        else:
+            print('No pull requests found')
 
     def pull_request_correlations(self):
         if len(self.pull_requests) > 0:
@@ -475,7 +501,7 @@ class Repository:
 
             #create a barplot with the
             correlations = subset.plot.box()
-            correlations.show()
+            correlations.figure.savefig(self.output_filepath + 'file_changes_per_user.png')
         else:
             print('No pull requests found')
 
