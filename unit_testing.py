@@ -15,7 +15,7 @@ class RepositoryTest(unittest.TestCase):
         self.owner_repos = [('jabref', 'jabref'), ('sethvargo', 'terraform-provider-google'), ('stanGirard', 'Alpine-Powerhouse')]
         self.token = token
         for owner, repo in self.owner_repos:
-            self.repos.append(gitdata.Repository(owner, repo,time_window_days=30, token=self.token))
+            self.repos.append(gitdata.Repository(owner, repo,time_window_days=365, token=self.token))
 
     def test_get_users_as_json(self):
         for repo in self.repos:
