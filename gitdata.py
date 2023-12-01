@@ -88,6 +88,7 @@ class AllRepositories:
             #print(ax)
             ax.figure.savefig(self.output_filepath + 'pulls_per_day.png', bbox_inches='tight')
 
+
         except Exception as e:
             #this is just for troubleshooting our code and testing, we shouldn't need it once we have this perfected
             print('something is wrong with the data, here is the error: ')
@@ -119,7 +120,9 @@ class AllRepositories:
             ax = analysis_days.plot.line(x='date')
             #display and save fig
             #print(ax)
+
             ax.figure.savefig(self.output_filepath + 'open_vs_closed_per_day.png', bbox_inches='tight')
+
 
         except Exception as e:
             #this is just for troubleshooting our code and testing, we shouldn't need it once we have this perfected
@@ -140,11 +143,13 @@ class AllRepositories:
             temp_dict['users'] = len(repo.users)
             repo_users.append(temp_dict)
             
-        #create dataframe from list of dicts, display, and save fig  
+        #create dataframe from list of dicts, display, and save fig
         df = pd.DataFrame(repo_users)
         ax = df.plot.bar(x='repo_name', y='users', rot=0)
         #print(ax)
+
         ax.figure.savefig(self.output_filepath + 'users_per_repository.png', bbox_inches='tight')
+
         return None
 
 
@@ -418,6 +423,7 @@ class Repository:
             df = pd.DataFrame(temp_dict).dropna()
             ax = df.plot.box(by="state", return_type='axes',showfliers=False)
             ax['commit'].figure.savefig(self.output_filepath + 'box_closed_open_commit.png', bbox_inches='tight')
+
         else:
             print('No pull requests found')
     
@@ -432,6 +438,7 @@ class Repository:
             df = pd.DataFrame(temp_dict).dropna()
             ax = df.plot.box(by="state", return_type='axes',showfliers=False)
             ax['addition'].figure.savefig(self.output_filepath + 'box_addition_deletion.png', bbox_inches='tight')
+
         else:
             print('No pull requests found')
     
@@ -452,6 +459,7 @@ class Repository:
             df = df.dropna()
             scatterplot = df.plot.scatter(x='addition', y='deletion')
             scatterplot.figure.savefig(self.output_filepath + 'scatter_addition_deletion.png', bbox_inches='tight')
+
         else:
             print('No pull requests found')
 
@@ -483,6 +491,7 @@ class Repository:
             #create a barplot with the
             correlations = subset.plot.box(by='user',showfliers=False,return_type='axes')
             correlations['num_changed_files'].figure.savefig(self.output_filepath + 'file_changes_per_user.png', bbox_inches='tight')
+
         else:
             print('No pull requests found')
 
