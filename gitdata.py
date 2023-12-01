@@ -191,10 +191,10 @@ class Repository:
             outdir = f"repo_summary_{self.repo_name}/"
         else:
             outdir = self.output_filepath + '/' + f"repo_summary_{self.repo_name}/"
-        
+
         if not os.path.exists(outdir):
             os.mkdir(outdir)
-            
+
         self.output_filepath = outdir
 
     def get_pulls_as_json(self):
