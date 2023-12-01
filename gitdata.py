@@ -75,7 +75,7 @@ class AllRepositories:
         df = pd.concat(dfs)
         
         #this will remove the hours, minutes and seconds data from the created_at field and leave us with just the date
-        df['created_at'] = df.created_at.astype('datetime64[ns]').dt.floor('d')
+        df['created_at'] = pd.to_datetime(df['created_at'].str.split('T').str[0])
 
         try:
             #create dataframe of last 60 days
@@ -107,8 +107,8 @@ class AllRepositories:
         df = pd.concat(dfs)
 
         #this will remove the hours, minutes and seconds data from the created_at and closed_at fields so we only have the date
-        df['created_at'] = df.created_at.astype('datetime64[ns]').dt.floor('d')
-        df['closed_at'] = df.closed_at.astype('datetime64[ns]').dt.floor('d')
+        df['created_at'] = pd.to_datetime(df['created_at'].str.split('T').str[0])
+        df['closed_at'] = pd.to_datetime(df['closed_at'].str.split('T').str[0])
 
         try:
             #create dataframe of last 60 days
