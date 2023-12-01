@@ -108,12 +108,13 @@ class WelcomeMenu:
         self.app = parent_app
     def display(self):
         clear_screen()
-        print('********************************************')
-        print('*********** GITHUB DATA BUDDY **************')
-        print('************* Version 0.2.1 ****************')
+        print('**************************************************************')
+        print('****************** INF-502 GITHUB DATA TOOL ******************')
+        print('************************ Version 1.0.0 ***********************')
         print()
-        print('Updated November 11, 2023')
-        print('Developed by...[names]')
+        print('Updated December 1, 2023')
+        print('Developed by Johnathan Tenny, Vincent Sutherland,')
+        print('Venkata Sumedhasri Chaluvadi, Paul Deasy, Abdur Raheem Mohammed')
         print()
         print()
         input('PRESS ENTER TO CONTINUE')
