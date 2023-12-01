@@ -6,7 +6,7 @@ import pandas
 class AllRepositories:
 
     analysis_number = 0
-    
+
     def __init__(self, repos,output_filepath=None,time_window_days = None):
         self.repos = repos
         self.start_date = None
@@ -25,7 +25,7 @@ class AllRepositories:
             print('Figures have been saved to: ' + os.path.abspath(self.output_filepath))
         else:
             print('No pull requests found in list of repos')
-        
+
     def count_total_pull_requests(self):
         count = 0
         if len(self.repos) > 0:
@@ -44,10 +44,10 @@ class AllRepositories:
             outdir = f"all_repos_analysis_{AllRepositories.analysis_number}/"
         else:
             outdir = self.output_filepath + '/' + f"all_repos_analysis_{AllRepositories.analysis_number}/"
-        
+
         if not os.path.exists(outdir):
             os.mkdir(outdir)
-            
+
         self.output_filepath = outdir
 
     def fill_analysis_dates(self):
@@ -75,7 +75,7 @@ class AllRepositories:
         df = pd.concat(dfs)
         
         #this will remove the hours, minutes and seconds data from the created_at field and leave us with just the date
-        df['created_at'] = df.created_at.astype('datetime64[ns]').dt.floor('d')
+        df['created_at'] = pd.to_datetime(df['created_at'].str.split('T').str[0])
 
         try:
             #create dataframe of last 60 days
@@ -106,8 +106,8 @@ class AllRepositories:
         df = pd.concat(dfs)
 
         #this will remove the hours, minutes and seconds data from the created_at and closed_at fields so we only have the date
-        df['created_at'] = df.created_at.astype('datetime64[ns]').dt.floor('d')
-        df['closed_at'] = df.closed_at.astype('datetime64[ns]').dt.floor('d')
+        df['created_at'] = pd.to_datetime(df['created_at'].str.split('T').str[0])
+        df['closed_at'] = pd.to_datetime(df['closed_at'].str.split('T').str[0])
 
         try:
             #create dataframe of last 60 days
@@ -334,7 +334,7 @@ class Repository:
 
         #display results
         return correlations
-    
+
     def total_pulls_closed(self):
         pull_closed_total = 0
         for pull in self.pull_requests:
@@ -437,12 +437,18 @@ class Repository:
     
     def scatter_addition_deletion(self):
         import pandas as pd
+        import matplotlib.pyplot as plt
         if len(self.pull_requests) > 0:
             temp_dict = {'addition': [], 'deletion': []}
             for pull in self.pull_requests:
                 temp_dict['addition'].append(pull.num_additions)
                 temp_dict['deletion'].append(pull.num_deletions)
             df = pd.DataFrame(temp_dict)
+            # Remove data that is more than 3 standard deviations from the mean
+            additions_extreme_threshold = df['addition'].mean() + df['addition'].std() * 3
+            deletions_extreme_threshold = df['deletion'].mean() + df['deletion'].std() * 3
+            df = df[df['addition'] <= additions_extreme_threshold]
+            df = df[df['deletion'] <= deletions_extreme_threshold]
             df = df.dropna()
             scatterplot = df.plot.scatter(x='addition', y='deletion')
             scatterplot.figure.savefig(self.output_filepath + 'scatter_addition_deletion.png', bbox_inches='tight')
@@ -475,7 +481,7 @@ class Repository:
             subset = subset.groupby(['user']).sum()
 
             #create a barplot with the
-            correlations = subset.plot.bar()
+            correlations = subset.plot.box(by='user')
             correlations.figure.savefig(self.output_filepath + 'file_changes_per_user.png', bbox_inches='tight')
         else:
             print('No pull requests found')
@@ -583,7 +589,7 @@ class PullRequest:
       # Save to repos/owner-repo.csv
       repo_csv_path = os.path.join('repos', f'{owner_name}-{repo_name}.csv')
       save_as_csv(repo_csv_path, self)
-      
+
 class User:
   def __init__(self, name, followers:str = None, following:int = None, public_repos:str = None, public_gists:str = None, token=None):
       
@@ -711,7 +717,7 @@ def get_github_api_request(url,convert_json=True,params=None,time_window_days = 
 
 
     return results
-      
+
 def save_as_csv(file_name, gitdata_object):
     # Check if the file exists
     file_exists = os.path.exists(file_name)
