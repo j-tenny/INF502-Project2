@@ -192,7 +192,8 @@ class GetRepoMenu:
 
         # Use these inputs to download data for a repo
         try:
-            repo_data = gitdata.Repository(owner_name,repo_name,time_window_days=time_window_days,token=self.app._token)
+            repo_figures_path = self.app.repos_dir+owner_name+'-'+repo_name
+            repo_data = gitdata.Repository(owner_name,repo_name,time_window_days=time_window_days,token=self.app._token,output_path=repo_figures_path)
         except KeyError as e:
             # If an exception occurs, start over
             print(str(e))
